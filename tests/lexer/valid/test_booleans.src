@@ -1,0 +1,6 @@
+// Тест 13: Булевы значения
+true
+false
+if (true) {}
+while (false) {}
+return true;

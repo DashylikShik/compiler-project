@@ -1,0 +1,5 @@
+// Тест 11: Переменные
+int counter;
+float price = 99.99;
+bool flag = true;
+counter = 42;

@@ -1,0 +1,4 @@
+// Тест 2: Незакрытая строка
+"unterminated string
+int x = 42;
+"another unterminated

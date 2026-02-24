@@ -1,0 +1,8 @@
+// Тест 14: Смешанный код
+fn calculate(x int, y int) int {
+    int result = x * y + 42;
+    if (result > 100) {
+        return 100;
+    }
+    return result;
+}
