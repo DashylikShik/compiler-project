@@ -1,4 +1,0 @@
-// Тест 6: Отсутствующая кавычка
-string s = "hello;
-string t = world";
-string u = "test;

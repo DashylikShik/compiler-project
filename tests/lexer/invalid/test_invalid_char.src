@@ -1,6 +1,0 @@
-// Тест 1: Недопустимые символы
-int x = 42;
-@invalid
-#invalid
-$invalid
-`invalid

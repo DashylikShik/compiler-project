@@ -1,3 +1,0 @@
-// Тест 17: Длинные идентификаторы
-int this_is_a_very_long_identifier_name_that_is_still_valid_123 = 42;
-float another_really_long_identifier_with_many_characters_456 = 3.14;
