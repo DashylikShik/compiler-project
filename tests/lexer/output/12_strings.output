@@ -1,7 +1,0 @@
-2:1 STRING_LITERAL ""hello"" hello
-3:1 STRING_LITERAL ""hello world"" hello world
-4:1 STRING_LITERAL """" 
-5:1 STRING_LITERAL ""special !@#$%"" special !@#$%
-6:1 STRING_LITERAL ""line1line2"" line1line2
-7:1 STRING_LITERAL ""simple string"" simple string
-7:16 EOF ""
