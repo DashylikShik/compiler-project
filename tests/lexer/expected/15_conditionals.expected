@@ -1,0 +1,22 @@
+# Test: 15_conditionals
+# Type: valid
+#--------------------------------------------------
+2:1 if "if"
+2:4 ( "("
+2:5 IDENTIFIER "x"
+2:7 > ">"
+2:9 INT_LITERAL "0" 0
+2:10 ) ")"
+2:12 { "{"
+3:5 return "return"
+3:12 IDENTIFIER "x"
+3:13 ; ";"
+4:1 } "}"
+4:3 else "else"
+4:8 { "{"
+5:5 return "return"
+5:12 - "-"
+5:13 IDENTIFIER "x"
+5:14 ; ";"
+6:1 } "}"
+6:2 EOF ""

@@ -1,0 +1,4 @@
+# Test: 02_unterminated_string
+# Type: invalid
+# Expected errors: 1
+Строка 3, колонка 13: Незакрытая строка

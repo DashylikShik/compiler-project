@@ -1,0 +1,4 @@
+# Test: 07_missing_quote
+# Type: invalid
+# Expected errors: 1
+Строка 4, колонка 6: Незакрытая строка

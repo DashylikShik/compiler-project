@@ -1,0 +1,15 @@
+# Test: 07_operators_logical
+# Type: valid
+#--------------------------------------------------
+2:1 && "&&"
+2:4 || "||"
+2:7 ! "!"
+3:1 IDENTIFIER "x"
+3:3 && "&&"
+3:6 IDENTIFIER "y"
+4:1 IDENTIFIER "a"
+4:3 || "||"
+4:6 IDENTIFIER "b"
+5:1 ! "!"
+5:2 IDENTIFIER "flag"
+5:6 EOF ""

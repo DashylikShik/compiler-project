@@ -1,0 +1,5 @@
+// Типы данных
+int i = 42;
+float f = 3.14;
+bool b = true;
+void test() {}

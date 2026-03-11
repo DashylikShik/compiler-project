@@ -1,0 +1,3 @@
+[console_scripts]
+compiler = src.main:main
+compiler-test = src.main:test

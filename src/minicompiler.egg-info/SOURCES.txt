@@ -1,0 +1,15 @@
+README.md
+setup.py
+src/lexer/__init__.py
+src/lexer/scanner.py
+src/lexer/token.py
+src/minicompiler.egg-info/PKG-INFO
+src/minicompiler.egg-info/SOURCES.txt
+src/minicompiler.egg-info/dependency_links.txt
+src/minicompiler.egg-info/entry_points.txt
+src/minicompiler.egg-info/top_level.txt
+src/parser/__init__.py
+src/utils/__init__.py
+tests/test_parser.py
+tests/test_runner.py
+tests/test_scanner.py

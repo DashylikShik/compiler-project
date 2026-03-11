@@ -1,0 +1,5 @@
+// Переменные
+int counter;
+float price = 99.99;
+bool flag = true;
+int x, y, z;
