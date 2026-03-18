@@ -1,0 +1,3 @@
+fn open() {
+    int x = 1;
+    # Missing closing brace

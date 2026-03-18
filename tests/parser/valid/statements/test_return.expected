@@ -1,0 +1,6 @@
+Program:
+  FunctionDecl: main -> void
+    Parameters: []
+    Body:
+      Block:
+        Return: 0

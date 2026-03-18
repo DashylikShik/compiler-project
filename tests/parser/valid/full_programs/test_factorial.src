@@ -1,4 +1,4 @@
-fn factorial(int n) int {
+fn factorial(int n) -> int {
     int result = 1;
     while (n > 0) {
         result = result * n;

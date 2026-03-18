@@ -249,7 +249,7 @@ def main():
         return 0
 
     elif command == "test-parser":
-        # Запуск тестов парсера (Sprint 2) - ТВОЙ ДОБАВЛЕННЫЙ КОД
+        # Запуск тестов парсера
         test_parser = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             'tests', 'test_parser.py'

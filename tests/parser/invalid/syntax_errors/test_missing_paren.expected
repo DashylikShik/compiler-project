@@ -1,0 +1,2 @@
+[Syntax Errors]:
+  [Line 1, Col 11] Expect ')' after if condition. Got: TokenType.LBRACE ('{')

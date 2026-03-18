@@ -1,0 +1,6 @@
+Program:
+  WhileStmt:
+    Condition: (i < 10)
+    Body:
+      Block:
+        ExprStmt: (i = (i + 1))

@@ -1,155 +1,121 @@
-from enum import Enum
-from typing import List, Optional, Any
-
-class NodeType(Enum):
-    PROGRAM = "Program"
-    FUNCTION_DECL = "FunctionDecl"
-    STRUCT_DECL = "StructDecl"
-    VAR_DECL = "VarDecl"
-    PARAM = "Param"
-    BLOCK = "Block"
-    IF_STMT = "IfStmt"
-    WHILE_STMT = "WhileStmt"
-    FOR_STMT = "ForStmt"
-    RETURN_STMT = "ReturnStmt"
-    EXPR_STMT = "ExprStmt"
-    BINARY_EXPR = "BinaryExpr"
-    UNARY_EXPR = "UnaryExpr"
-    LITERAL_EXPR = "LiteralExpr"
-    IDENTIFIER_EXPR = "IdentifierExpr"
-    CALL_EXPR = "CallExpr"
-    ASSIGNMENT_EXPR = "AssignmentExpr"
+# src/parser/ast.py
 
 class ASTNode:
-    def __init__(self, line: int, column: int):
+    """Abstract base node"""
+    def __init__(self, line=None, column=None):
         self.line = line
         self.column = column
-        self.node_type = None
 
 class ProgramNode(ASTNode):
-    def __init__(self, declarations: List[ASTNode], line: int = 1, column: int = 1):
+    def __init__(self, declarations, line=1, column=1):
         super().__init__(line, column)
-        self.node_type = NodeType.PROGRAM
         self.declarations = declarations
 
-# Declarations
-class FunctionDeclNode(ASTNode):
-    def __init__(self, name: str, params: List['ParamNode'], return_type: Optional[str], body: 'BlockNode', line: int, column: int):
+# --- Declarations (AST-4) ---
+class DeclarationNode(ASTNode): pass
+
+class FunctionDeclNode(DeclarationNode):
+    def __init__(self, name, return_type, params, body, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.FUNCTION_DECL
         self.name = name
-        self.params = params
         self.return_type = return_type
-        self.body = body
+        self.params = params # List[ParamNode]
+        self.body = body     # BlockStmtNode
 
-class StructDeclNode(ASTNode):
-    def __init__(self, name: str, fields: List['VarDeclNode'], line: int, column: int):
+class StructDeclNode(DeclarationNode):
+    def __init__(self, name, fields, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.STRUCT_DECL
         self.name = name
-        self.fields = fields
+        self.fields = fields # List[VarDeclStmtNode]
 
-class VarDeclNode(ASTNode):
-    def __init__(self, var_type: str, name: str, initializer: Optional['ExpressionNode'], line: int, column: int):
+class ParamNode(ASTNode):
+    def __init__(self, type_name, name, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.VAR_DECL
-        self.var_type = var_type
+        self.type_name = type_name
+        self.name = name
+
+# --- Statements (AST-3) ---
+class StatementNode(ASTNode): pass
+
+class BlockStmtNode(StatementNode):
+    def __init__(self, statements, line=None, column=None):
+        super().__init__(line, column)
+        self.statements = statements
+
+class VarDeclStmtNode(StatementNode):
+    def __init__(self, type_name, name, initializer, line=None, column=None):
+        super().__init__(line, column)
+        self.type_name = type_name
         self.name = name
         self.initializer = initializer
 
-class ParamNode(ASTNode):
-    def __init__(self, param_type: str, name: str, line: int, column: int):
+class IfStmtNode(StatementNode):
+    def __init__(self, condition, then_branch, else_branch, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.PARAM
-        self.param_type = param_type
-        self.name = name
-
-# Statements
-class BlockNode(ASTNode):
-    def __init__(self, statements: List[ASTNode], line: int, column: int):
-        super().__init__(line, column)
-        self.node_type = NodeType.BLOCK
-        self.statements = statements
-
-class IfStmtNode(ASTNode):
-    def __init__(self, condition: 'ExpressionNode', then_branch: ASTNode, else_branch: Optional[ASTNode], line: int, column: int):
-        super().__init__(line, column)
-        self.node_type = NodeType.IF_STMT
         self.condition = condition
         self.then_branch = then_branch
         self.else_branch = else_branch
 
-class WhileStmtNode(ASTNode):
-    def __init__(self, condition: 'ExpressionNode', body: ASTNode, line: int, column: int):
+class WhileStmtNode(StatementNode):
+    def __init__(self, condition, body, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.WHILE_STMT
         self.condition = condition
         self.body = body
 
-class ForStmtNode(ASTNode):
-    def __init__(self, init: Optional[ASTNode], condition: Optional['ExpressionNode'], update: Optional['ExpressionNode'], body: ASTNode, line: int, column: int):
+class ForStmtNode(StatementNode):
+    def __init__(self, init, condition, update, body, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.FOR_STMT
         self.init = init
         self.condition = condition
         self.update = update
         self.body = body
 
-class ReturnStmtNode(ASTNode):
-    def __init__(self, value: Optional['ExpressionNode'], line: int, column: int):
+class ReturnStmtNode(StatementNode):
+    def __init__(self, value, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.RETURN_STMT
         self.value = value
 
-class ExprStmtNode(ASTNode):
-    def __init__(self, expression: 'ExpressionNode', line: int, column: int):
+class ExprStmtNode(StatementNode):
+    def __init__(self, expression, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.EXPR_STMT
         self.expression = expression
 
-# Expressions
-class ExpressionNode(ASTNode):
-    pass
+# --- Expressions (AST-2) ---
+class ExpressionNode(ASTNode): pass
 
 class LiteralExprNode(ExpressionNode):
-    def __init__(self, value: Any, literal_type: str, line: int, column: int):
+    def __init__(self, value, literal_type, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.LITERAL_EXPR
         self.value = value
         self.literal_type = literal_type
 
 class IdentifierExprNode(ExpressionNode):
-    def __init__(self, name: str, line: int, column: int):
+    def __init__(self, name, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.IDENTIFIER_EXPR
         self.name = name
 
 class BinaryExprNode(ExpressionNode):
-    def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode, line: int, column: int):
+    def __init__(self, left, operator, right, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.BINARY_EXPR
         self.left = left
-        self.operator = operator
+        self.operator = operator # Token object
         self.right = right
 
 class UnaryExprNode(ExpressionNode):
-    def __init__(self, operator: str, operand: ExpressionNode, line: int, column: int):
+    def __init__(self, operator, operand, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.UNARY_EXPR
         self.operator = operator
         self.operand = operand
 
 class CallExprNode(ExpressionNode):
-    def __init__(self, callee: str, arguments: List[ExpressionNode], line: int, column: int):
+    def __init__(self, callee, arguments, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.CALL_EXPR
         self.callee = callee
         self.arguments = arguments
 
 class AssignmentExprNode(ExpressionNode):
-    def __init__(self, target: str, operator: str, value: ExpressionNode, line: int, column: int):
+    def __init__(self, target, operator, value, line=None, column=None):
         super().__init__(line, column)
-        self.node_type = NodeType.ASSIGNMENT_EXPR
         self.target = target
         self.operator = operator
         self.value = value

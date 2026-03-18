@@ -1,0 +1,20 @@
+Program:
+  FunctionDecl: factorial -> int
+    Parameters: [n]
+    Body:
+      Block:
+        VarDecl: int result = 1
+        WhileStmt:
+          Condition: (n > 0)
+          Body:
+            Block:
+              ExprStmt: (result = (result * n))
+              ExprStmt: (n = (n - 1))
+        Return: result
+  FunctionDecl: main -> void
+    Parameters: []
+    Body:
+      Block:
+        VarDecl: int x = 5
+        VarDecl: int f = factorial(x)
+        Return: f

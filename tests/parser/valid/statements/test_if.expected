@@ -1,0 +1,9 @@
+Program:
+  IfStmt:
+    Condition: (x > 0)
+    Then:
+      Block:
+        Return: x
+    Else:
+      Block:
+        Return: (-x)

@@ -70,6 +70,7 @@ class Scanner:
             '-=': TokenType.OP_MINUS_ASSIGN,
             '*=': TokenType.OP_MULT_ASSIGN,
             '/=': TokenType.OP_DIV_ASSIGN,
+            "->": TokenType.OP_ARROW 
         }
         
         self.scan_tokens()

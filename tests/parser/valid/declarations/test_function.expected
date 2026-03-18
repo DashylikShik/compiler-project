@@ -1,0 +1,6 @@
+Program:
+  FunctionDecl: add -> int
+    Parameters: [a, b]
+    Body:
+      Block:
+        Return: (a + b)

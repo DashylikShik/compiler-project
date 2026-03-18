@@ -20,11 +20,11 @@ class ASTPrinter:
             return self._print_function(node, indent)
         if isinstance(node, StructDeclNode):
             return self._print_struct(node, indent)
-        if isinstance(node, VarDeclNode):
+        if isinstance(node, VarDeclStmtNode):
             return self._print_var_decl(node, indent)
         if isinstance(node, ParamNode):
             return self._print_param(node, indent)
-        if isinstance(node, BlockNode):
+        if isinstance(node, BlockStmtNode):
             return self._print_block(node, indent)
         if isinstance(node, IfStmtNode):
             return self._print_if(node, indent)
@@ -73,14 +73,14 @@ class ASTPrinter:
             lines.append(self._print_node(field, indent + 1))
         return "\n".join(lines)
 
-    def _print_var_decl(self, node: VarDeclNode, indent: int) -> str:
+    def _print_var_decl(self, node: VarDeclStmtNode, indent: int) -> str:
         init = f" = {self._print_node(node.initializer, 0)}" if node.initializer else ""
-        return f"{self._indent(indent)}VarDecl: {node.var_type} {node.name}{init}"
+        return f"{self._indent(indent)}VarDecl: {node.type_name} {node.name}{init}"
 
     def _print_param(self, node: ParamNode, indent: int) -> str:
-        return f"{self._indent(indent)}Param: {node.param_type} {node.name}"
+        return f"{self._indent(indent)}Param: {node.type_name} {node.name}"
 
-    def _print_block(self, node: BlockNode, indent: int) -> str:
+    def _print_block(self, node: BlockStmtNode, indent: int) -> str:
         lines = [f"{self._indent(indent)}Block:"]
         for stmt in node.statements:
             lines.append(self._print_node(stmt, indent + 1))
@@ -112,8 +112,7 @@ class ASTPrinter:
         if node.init:
             lines.append(f"{self._indent(indent + 1)}Init: {self._print_node(node.init, 0)}")
         if node.condition:
-            cond = self._print_node(node.condition, 0)
-            lines.append(f"{self._indent(indent + 1)}Condition: {cond}")
+            lines.append(f"{self._indent(indent + 1)}Condition: {self._print_node(node.condition, 0)}")
         if node.update:
             lines.append(f"{self._indent(indent + 1)}Update: {self._print_node(node.update, 0)}")
         lines.append(f"{self._indent(indent + 1)}Body:")
@@ -130,11 +129,11 @@ class ASTPrinter:
     def _print_binary(self, node: BinaryExprNode, indent: int) -> str:
         left = self._print_node(node.left, 0)
         right = self._print_node(node.right, 0)
-        return f"({left} {node.operator} {right})"
+        return f"({left} {node.operator.lexeme} {right})"
 
     def _print_unary(self, node: UnaryExprNode, indent: int) -> str:
         operand = self._print_node(node.operand, 0)
-        return f"({node.operator}{operand})"
+        return f"({node.operator.lexeme}{operand})"
 
     def _print_literal(self, node: LiteralExprNode, indent: int) -> str:
         if node.literal_type == "string":
@@ -146,8 +145,10 @@ class ASTPrinter:
 
     def _print_call(self, node: CallExprNode, indent: int) -> str:
         args = ", ".join([self._print_node(a, 0) for a in node.arguments])
-        return f"{node.callee}({args})"
+        callee_name = node.callee.name if isinstance(node.callee, IdentifierExprNode) else str(node.callee)
+        return f"{callee_name}({args})"
 
     def _print_assignment(self, node: AssignmentExprNode, indent: int) -> str:
         value = self._print_node(node.value, 0)
-        return f"({node.target} {node.operator} {value})"
+        target_name = node.target.name if isinstance(node.target, IdentifierExprNode) else str(node.target)
+        return f"({target_name} {node.operator.lexeme} {value})"

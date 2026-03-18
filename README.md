@@ -42,7 +42,7 @@ compiler-project/
 │ │ │ └── full_programs/ # Полные программы
 │ │ ├── invalid/ # 2 невалидных теста
 │ │ │ └── syntax_errors/ # Синтаксические ошибки
-│ │ ├── expected/ # 13 эталонных файлов
+│ │ ├── expected/ # эталонные файлы
 │ │ │ ├── valid_* # AST для валидных тестов
 │ │ │ └── invalid_* # Ожидаемые ошибки
 │ │ └── output/ # Результаты тестов
@@ -66,6 +66,7 @@ compiler-project/
 python tests/test_runner.py --generate
 
 2. запуск тестов лексера:
+
 python tests/test_runner.py
 
 3. запуск конкретного примера:
@@ -76,11 +77,21 @@ python src/main.py parse examples/test3.src
 
 # Разные форматы вывода AST
 python src/main.py parse --format text examples/test3.src
-python src/main.py parse --format dot examples/test3.src
 python src/main.py parse --format json examples/test3.src
 
 # Сохранить AST в файл
 python src/main.py parse --output ast.txt examples/test3.src
 
+
 # Запустить тесты парсера
-python src/main.py test-parser
+python -m pytest tests/parser/ -v
+
+# Создание DOT файла
+python src/main.py parse examples/test.src --format dot --output ast.dot
+
+# Создание PNG файла
+dot -Tpng ast.dot -o ast.png
+
+# Просмотр
+start ast.png
+

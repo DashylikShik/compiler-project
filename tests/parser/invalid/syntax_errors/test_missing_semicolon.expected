@@ -1,0 +1,2 @@
+[Syntax Errors]:
+  [Line 2, Col 1] Expect ';' after variable declaration. Got: TokenType.KW_INT ('int')

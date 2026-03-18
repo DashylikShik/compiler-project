@@ -1,0 +1,5 @@
+Program:
+  VarDecl: int x
+  VarDecl: float y = 3.14
+  VarDecl: bool flag = True
+  VarDecl: int a = 5

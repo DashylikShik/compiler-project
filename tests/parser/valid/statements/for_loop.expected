@@ -1,0 +1,8 @@
+Program:
+  ForStmt:
+    Init: VarDecl: int i = 0
+    Condition: (i < 10)
+    Update: (i = (i + 1))
+    Body:
+      Block:
+        ExprStmt: print(i)

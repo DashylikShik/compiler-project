@@ -1,0 +1,4 @@
+[Syntax Errors]:
+  [Line 3, Col 23] Expect ';' after variable declaration. Got: TokenType.IDENTIFIER ('brace')
+  [Line 3, Col 28] Expect ';' after expression. Got: TokenType.END_OF_FILE ('')
+  [Line 3, Col 28] Expect '}' after block. Got: TokenType.END_OF_FILE ('')

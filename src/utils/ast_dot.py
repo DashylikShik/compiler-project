@@ -26,12 +26,12 @@ class ASTDotGenerator:
             return f"Function\\n{node.name}"
         if isinstance(node, StructDeclNode):
             return f"Struct\\n{node.name}"
-        if isinstance(node, VarDeclNode):
+        if isinstance(node, VarDeclStmtNode):
             init = " = ..." if node.initializer else ""
-            return f"Var\\n{node.var_type} {node.name}{init}"
+            return f"Var\\n{node.type_name} {node.name}{init}"
         if isinstance(node, ParamNode):
-            return f"Param\\n{node.param_type} {node.name}"
-        if isinstance(node, BlockNode):
+            return f"Param\\n{node.type_name} {node.name}"
+        if isinstance(node, BlockStmtNode):
             return "Block"
         if isinstance(node, IfStmtNode):
             return "If"
@@ -44,17 +44,18 @@ class ASTDotGenerator:
         if isinstance(node, ExprStmtNode):
             return "Expr"
         if isinstance(node, BinaryExprNode):
-            return node.operator
+            return node.operator.lexeme
         if isinstance(node, UnaryExprNode):
-            return f"Unary\\n{node.operator}"
+            return f"Unary\\n{node.operator.lexeme}"
         if isinstance(node, LiteralExprNode):
             return f"Literal\\n{node.value}"
         if isinstance(node, IdentifierExprNode):
             return f"ID\\n{node.name}"
         if isinstance(node, CallExprNode):
-            return f"Call\\n{node.callee}"
+             name = node.callee.name if isinstance(node.callee, IdentifierExprNode) else "Call"
+             return f"Call\\n{name}"
         if isinstance(node, AssignmentExprNode):
-            return f"Assign\\n{node.operator}"
+            return f"Assign\\n{node.operator.lexeme}"
         return "Node"
 
     def _process_node(self, node: ASTNode, lines: list, parent_id: str = None) -> str:
@@ -76,7 +77,7 @@ class ASTDotGenerator:
         elif isinstance(node, StructDeclNode):
             for field in node.fields:
                 self._process_node(field, lines, node_id)
-        elif isinstance(node, BlockNode):
+        elif isinstance(node, BlockStmtNode):
             for stmt in node.statements:
                 self._process_node(stmt, lines, node_id)
         elif isinstance(node, IfStmtNode):
@@ -84,24 +85,29 @@ class ASTDotGenerator:
             lines.append(f'  {cond_id} [label="Condition"];')
             lines.append(f'  {node_id} -> {cond_id};')
             self._process_node(node.condition, lines, cond_id)
+            
             then_id = self._get_node_id()
             lines.append(f'  {then_id} [label="Then"];')
             lines.append(f'  {node_id} -> {then_id};')
             self._process_node(node.then_branch, lines, then_id)
+            
             if node.else_branch:
                 else_id = self._get_node_id()
                 lines.append(f'  {else_id} [label="Else"];')
                 lines.append(f'  {node_id} -> {else_id};')
                 self._process_node(node.else_branch, lines, else_id)
+                
         elif isinstance(node, WhileStmtNode):
             cond_id = self._get_node_id()
             lines.append(f'  {cond_id} [label="Condition"];')
             lines.append(f'  {node_id} -> {cond_id};')
             self._process_node(node.condition, lines, cond_id)
+            
             body_id = self._get_node_id()
             lines.append(f'  {body_id} [label="Body"];')
             lines.append(f'  {node_id} -> {body_id};')
             self._process_node(node.body, lines, body_id)
+            
         elif isinstance(node, BinaryExprNode):
             self._process_node(node.left, lines, node_id)
             self._process_node(node.right, lines, node_id)
@@ -112,4 +118,5 @@ class ASTDotGenerator:
                 self._process_node(arg, lines, node_id)
         elif isinstance(node, AssignmentExprNode):
             self._process_node(node.value, lines, node_id)
+            
         return node_id

@@ -1,0 +1,4 @@
+Program:
+  ExprStmt: (1 + (2 * 3))
+  ExprStmt: ((4 + 5) * 6)
+  ExprStmt: ((-7) + 8)
