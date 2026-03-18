@@ -29,7 +29,7 @@ class Parser:
     
     def peek(self) -> Token:
         if self.current >= len(self.tokens):
-            return self.tokens[-1]
+            return self.tokens[-1]     # Возвращает токен, на котором мы стоим, НЕ съедая его.
         return self.tokens[self.current]
     
     def previous(self) -> Token:
@@ -44,7 +44,7 @@ class Parser:
         return self.previous()
     
     def check(self, token_type: TokenType) -> bool:
-        if self.is_at_end():
+        if self.is_at_end():     # Использует peek(), чтобы спросить: "Следующее слово точно такое-то?"
             return False
         return self.peek().type == token_type
     

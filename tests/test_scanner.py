@@ -11,12 +11,6 @@ def test_file(filename):
     Функция для тестирования одного файла
     filename - имя файла в папке examples (например, "test1.src")
     """
-    
-    # Собираем полный путь к файлу
-    # __file__ - это путь к текущему файлу (test_scanner.py)
-    # .. - подняться на уровень выше (в корень)
-    # examples - папка с примерами
-    # filename - имя файла
     file_path = os.path.join(os.path.dirname(__file__), '..', 'examples', filename)
     
     print(f"ТЕСТИРУЕМ ФАЙЛ: {filename}")
