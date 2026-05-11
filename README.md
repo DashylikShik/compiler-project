@@ -217,7 +217,7 @@ python src\main.py check --symbols sym.src
 
 # Юнит-тесты
 python -m unittest tests.test_semantic -v
-
+python tests\test_semantic_integration.py //конкретика по тестам
 # Очистка
 del test.src error.src
 

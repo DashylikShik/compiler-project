@@ -187,7 +187,6 @@ def run_semantic_analysis(args):
         source = f.read()
 
     print(f"Анализ файла (семантический): {filename}")
-    print("-" * 50)
 
     # Лексический анализ
     scanner = Scanner(source)
