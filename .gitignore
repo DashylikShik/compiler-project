@@ -1,22 +1,13 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-.mypy_cache/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# Build artifacts
-*.exe
-*.out
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+__pycache__/ 
+*.pyc 
+*.pyo 
+.pytest_cache/ 
+.vscode/ 
+.idea/ 
+*.log 
+test_*.src 
+output/ 
+tests/semantic/output/ 
+tests/lexer/output/ 
+tests/parser/output/ 
+sprint3_report.txt 
