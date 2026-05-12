@@ -1,0 +1,58 @@
+{
+  "type": "IRProgram",
+  "functions": [
+    {
+      "name": "main",
+      "return_type": "int",
+      "parameters": [],
+      "basic_blocks": [
+        {
+          "label": "entry",
+          "instructions": [
+            {
+              "type": "mul",
+              "dest": "t2",
+              "src1": "2",
+              "src2": "3",
+              "args": []
+            },
+            {
+              "type": "add",
+              "dest": "t3",
+              "src1": "t2",
+              "src2": "4",
+              "args": []
+            },
+            {
+              "type": "move",
+              "dest": "t1",
+              "src1": "t3",
+              "src2": null,
+              "args": []
+            },
+            {
+              "type": "return",
+              "dest": null,
+              "src1": "t1",
+              "src2": null,
+              "args": []
+            }
+          ],
+          "predecessors": [],
+          "successors": []
+        }
+      ],
+      "temporaries": 3,
+      "statistics": {
+        "num_blocks": 1,
+        "num_instructions": 4
+      }
+    }
+  ],
+  "statistics": {
+    "total_functions": 1,
+    "total_basic_blocks": 1,
+    "total_instructions": 4,
+    "total_temporaries": 3
+  }
+}

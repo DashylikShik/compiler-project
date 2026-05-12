@@ -221,3 +221,35 @@ python tests\test_semantic_integration.py //конкретика по теста
 # Очистка
 del test.src error.src
 
+
+## Sprint 4: Intermediate Representation (IR)
+
+# 1 Проверка базовой генерации IR
+python src/main.py ir tests/ir/generation/expressions/arithmetic.src
+
+# 2 Проверка всех форматов
+# Текстовый формат
+python src/main.py ir test.src
+
+# DOT формат
+python src/main.py ir --format dot test.src
+
+# JSON формат
+python src/main.py ir --format json test.src
+
+# HTML формат
+python src/main.py ir --format html test.src --output test.html
+
+# 3 Проверка сложного примера (факториал)
+python -c "open('fact.src','w').write('fn fact(int n)->int{if(n<=1){return 1;}else{return n*fact(n-1);}}')"
+python src/main.py ir fact.src
+
+
+# 4. Показать статистику
+python src/main.py ir --verbose tests/ir/generation/expressions/arithmetic.src
+
+# 5. Запустить все тесты
+python tests/ir/test_runner.py
+
+# 6. Запустить golden тесты
+python tests/ir/test_golden.py

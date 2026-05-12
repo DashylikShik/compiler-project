@@ -1,0 +1,18 @@
+digraph IR {
+  rankdir=TB;
+  node [shape=box, style=filled, fillcolor=lightblue, fontname="Courier"];
+  edge [arrowhead=vee];
+
+  subgraph cluster_main {
+    label="Function: main";
+    style=filled;
+    fillcolor=lightgrey;
+    color=black;
+
+    entry [label="entry\lt2 = mul 2, 3\lt3 = add t2, 4\lt1 = t3\lreturn t1\l", fillcolor=lightgreen];
+
+  }
+
+  node [shape=oval, fillcolor=lightgrey];
+  return_main [label="return main"];
+}

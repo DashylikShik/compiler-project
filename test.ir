@@ -1,0 +1,9 @@
+# Generated IR for Miniompiler
+function main: int ()
+{
+  entry:
+      t2 = mul 2, 3
+      t3 = add t2, 4
+      t1 = t3
+      return t1
+}
