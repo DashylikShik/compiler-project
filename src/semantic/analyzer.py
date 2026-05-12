@@ -31,10 +31,7 @@ class SemanticAnalyzer:
         
         # Second pass: validate and analyze
         self.analyze_program(ast)
-        
-        if self.verbose:
-            print(self.symbol_table.dump())
-        
+    
         return self
     
     def collect_declarations(self, node: ASTNode):

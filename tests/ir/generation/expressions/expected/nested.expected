@@ -1,0 +1,4 @@
+func main() -> int
+    t1 = mul 3, 4
+    t2 = add 2, t1
+    return t2

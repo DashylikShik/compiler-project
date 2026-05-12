@@ -1,0 +1,9 @@
+func main() -> int
+  entry:
+    t1 = 5
+    t2 = cmp_gt t1, 0
+    jump_if t2, L1
+    jump L2
+    return 1
+    return 0
+    return 0

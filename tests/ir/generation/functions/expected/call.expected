@@ -1,0 +1,8 @@
+func add(int a, int b) -> int
+    t1 = a
+    t2 = b
+    t3 = add t1, t2
+    return t3
+func main() -> int
+    t1 = call add(5, 3)
+    return t1

@@ -1,0 +1,11 @@
+func main() -> int
+  entry:
+    t1 = 0
+    jump L1
+    t2 = cmp_lt t1, 10
+    jump_if t2, L2
+    jump L3
+    t3 = add t1, 1
+    t1 = t3
+    jump L1
+    return t1
