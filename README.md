@@ -9,54 +9,101 @@
 
 ## Структура проекта
 compiler-project/
-├── src/ # Исходный код
-│ ├── lexer/ # Лексический анализатор (Sprint 1)
-│ │ ├── scanner.py # Сканер токенов
-│ │ ├── token.py # Определения типов токенов
-│ │ └── init.py
-│ │
-│ ├── parser/ # Синтаксический анализатор (Sprint 2)
-│ │ ├── parser.py # Рекурсивный нисходящий парсер
-│ │ ├── ast.py # Классы узлов AST
-│ │ ├── grammar.txt # Формальная грамматика EBNF
-│ │ └── init.py
-│ │
-│ ├── utils/ # Вспомогательные утилиты
-│ │ ├── ast_printer.py # Pretty-print AST
-│ │ ├── ast_dot.py # Генерация DOT для Graphviz
-│ │ └── init.py
-│ │
-│ └── main.py # Точка входа
+├── src/                              # Исходный код
+│   ├── lexer/                        # Sprint 1: Лексический анализатор
+│   │   ├── scanner.py                # Сканер токенов
+│   │   ├── token.py                  # Определения типов токенов
+│   │   └── __init__.py
+│   │
+│   ├── parser/                       # Sprint 2: Синтаксический анализатор
+│   │   ├── parser.py                 # Рекурсивный нисходящий парсер
+│   │   ├── ast.py                    # Классы узлов AST
+│   │   ├── grammar.txt               # Формальная грамматика EBNF
+│   │   └── __init__.py
+│   │
+│   ├── semantic/                     # Sprint 3: Семантический анализатор
+│   │   ├── analyzer.py               # Семантический анализ AST
+│   │   ├── symbol_table.py           # Иерархическая таблица символов
+│   │   ├── type_system.py            # Система типов и проверка совместимости
+│   │   ├── errors.py                 # Классы семантических ошибок
+│   │   └── __init__.py
+│   │
+│   ├── ir/                           # Sprint 4: Промежуточное представление
+│   │   ├── ir_instructions.py        # Определения инструкций IR
+│   │   ├── ir_generator.py           # Генератор IR из AST
+│   │   ├── ir_printer.py             # Вывод в форматах (text/dot/json/html)
+│   │   ├── basic_block.py            # Базовые блоки и CFG
+│   │   └── __init__.py
+│   │
+│   ├── utils/                        # Вспомогательные утилиты
+│   │   ├── ast_printer.py            # Pretty-print AST
+│   │   ├── ast_dot.py                # Генерация DOT для Graphviz
+│   │   └── __init__.py
+│   │
+│   └── main.py                       # Точка входа (все спринты)
 │
-├── tests/ # Тесты
-│ ├── lexer/ # Тесты лексера (Sprint 1)
-│ │ ├── valid/ # 20 валидных тестов
-│ │ ├── invalid/ # 10 невалидных тестов
-│ │ └── expected/ # Эталонные токены
-│ │
-│ ├── parser/ # Тесты парсера (Sprint 2)
-│ │ ├── valid/ # 11 валидных тестов
-│ │ │ ├── expressions/ # Выражения
-│ │ │ ├── statements/ # Операторы
-│ │ │ ├── declarations/ # Объявления
-│ │ │ └── full_programs/ # Полные программы
-│ │ ├── invalid/ # 2 невалидных теста
-│ │ │ └── syntax_errors/ # Синтаксические ошибки
-│ │ ├── expected/ # эталонные файлы
-│ │ │ ├── valid_* # AST для валидных тестов
-│ │ │ └── invalid_* # Ожидаемые ошибки
-│ │ └── output/ # Результаты тестов
-│ │
-│ ├── test_runner.py # Раннер тестов лексера
-│ └── test_parser.py # Раннер тестов парсера
+├── tests/                            # Тесты
+│   ├── lexer/                        # Sprint 1: Тесты лексера
+│   │   ├── valid/                    # 20 валидных тестов
+│   │   ├── invalid/                  # 10 невалидных тестов
+│   │   ├── expected/                 # Эталонные токены
+│   │   └── output/                   # Результаты тестов
+│   │
+│   ├── parser/                       # Sprint 2: Тесты парсера
+│   │   ├── valid/                    # Валидные тесты
+│   │   │   ├── expressions/          # Выражения
+│   │   │   ├── statements/           # Операторы
+│   │   │   ├── declarations/         # Объявления
+│   │   │   └── full_programs/        # Полные программы
+│   │   ├── invalid/                  # Невалидные тесты
+│   │   │   └── syntax_errors/        # Синтаксические ошибки
+│   │   ├── expected/                 # Эталонные файлы
+│   │   │   ├── valid_*               # AST для валидных тестов
+│   │   │   └── invalid_*             # Ожидаемые ошибки
+│   │   └── output/                   # Результаты тестов
+│   │
+│   ├── semantic/                     # Sprint 3: Тесты семантики
+│   │   ├── valid/                    # Валидные семантические тесты
+│   │   ├── invalid/                  # Невалидные тесты (ошибки)
+│   │   ├── expected/                 # Эталонные результаты
+│   │   └── output/                   # Результаты тестов
+│   │
+│   ├── ir/                           # Sprint 4: Тесты IR
+│   │   ├── generation/               # Тесты генерации IR
+│   │   │   ├── expressions/          # Арифметические выражения
+│   │   │   │   ├── arithmetic.src
+│   │   │   │   └── expected/
+│   │   │   ├── control_flow/         # Управление потоком (if/while)
+│   │   │   │   ├── if_statement.src
+│   │   │   │   ├── while_loop.src
+│   │   │   │   └── expected/
+│   │   │   └── functions/            # Функции и вызовы
+│   │   │       ├── call.src
+│   │   │       ├── multiple.src
+│   │   │       └── expected/
+│   │   ├── validation/               # Валидационные проверки
+│   │   ├── test_runner.py            # Основные тесты IR (14 тестов)
+│   │   ├── test_golden.py            # Golden тесты (7 тестов)
+│   │   └── __init__.py
+│   │
+│   ├── test_runner.py                # Раннер тестов лексера
+│   ├── test_parser.py                # Раннер тестов парсера
+│   ├── test_semantic.py              # Юнит-тесты семантики
+│   └── __init__.py
 │
-├── examples/ # Примеры программ
-│ ├── test1.src #1sp
-│ ├── test2.src #1sp
-│ └── test3.src #2sp
+├── examples/                         # Примеры программ
+│   ├── test1.src
+│   ├── test2.src
+│   ├── test3.src
+│   └── factorial.src                 # Пример с рекурсией
 │
-└── docs/ # Документация
-└── language_spec.md # Спецификация языка
+├── docs/                             # Документация
+│   ├── language_spec.md              # Спецификация языка
+│   └── ir_spec.md                    # Спецификация IR
+│
+├── .gitignore                        # Исключения Git
+├── README.md                         # Документация проекта
+├── setup.py                          # Установка пакета
 
 
 ## Установка и запуск
@@ -253,3 +300,24 @@ python tests/ir/test_runner.py
 
 # 6. Запустить golden тесты
 python tests/ir/test_golden.py
+
+
+## Sprint 5: x86-64 Assembly Generation
+
+# Тест 1: Простая функция
+python src\main.py compile test1.src --verbose
+
+# Тест 2: Арифметика
+python src\main.py compile tests\codegen\valid\arithmetic_ops\add.src
+
+# Тест 3: If условие
+python src\main.py compile tests\codegen\valid\control_flow\if.src
+
+# Тест 4: Вызов функции
+python src\main.py compile tests\codegen\valid\function_calls\call.src
+
+
+python src\main.py compile test1.src
+python src\main.py compile test1.src --output program.asm
+python src\main.py compile test1.src --verbose
+type test1.asm

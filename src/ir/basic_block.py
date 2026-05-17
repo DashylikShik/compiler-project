@@ -55,7 +55,6 @@ class ControlFlowGraph:
             
             last_instr = block.instructions[-1]
             
-            # Add edge based on last instruction
             if last_instr.type == InstructionType.JUMP:
                 target_label = last_instr.src1.value
                 if target_label in block_map:
@@ -64,8 +63,6 @@ class ControlFlowGraph:
                     target.predecessors.append(block)
             
             elif last_instr.type in [InstructionType.JUMP_IF, InstructionType.JUMP_IF_NOT]:
-                # For conditional jumps, we need to track both branches
-                # This is simplified - real implementation would need more logic
                 pass
     
     def dump(self) -> str:

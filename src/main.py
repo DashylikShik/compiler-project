@@ -6,12 +6,14 @@
   Sprint 2: синтаксический анализ + AST
   Sprint 3: семантический анализ
   Sprint 4: генерация промежуточного представления (IR)
+  Sprint 5: генерация x86-64 ассемблера
 """
 
 import sys
 import os
 import json
 import argparse
+import subprocess
 
 # Добавляем путь к пакетам
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -34,15 +36,18 @@ def print_usage():
     print("  compiler parse <file.src>            # Синтаксический анализ + AST (Sprint 2)")
     print("  compiler check <file.src>            # Семантический анализ (Sprint 3)")
     print("  compiler ir <file.src>               # Генерация IR (Sprint 4)")
+    print("  compiler compile <file.src>          # Генерация x86-64 ассемблера (Sprint 5)")
     print("  compiler check --verbose <file.src>  # Семантический анализ с подробным выводом")
     print("  compiler check --symbols <file.src>  # Вывести таблицу символов")
     print("  compiler ir --verbose <file.src>     # IR с подробной статистикой")
     print("  compiler ir --output <file> <file.src> # Сохранить IR в файл")
+    print("  compiler compile --output <file.asm> <file.src> # Сохранить ассемблер")
+    print("  compiler compile --run <file.src>    # Собрать и запустить программу")
     print("  compiler parse --format [text|dot|json] <file.src>")
     print("  compiler test                        # Запустить тесты лексера")
     print("  compiler test-parser                 # Запустить тесты парсера")
     print("  compiler test-semantic               # Запустить тесты семантического анализа")
-    print("  compiler test-ir                    # Запустить тесты IR генерации")
+    print("  compiler test-ir                     # Запустить тесты IR генерации")
     print("  compiler --help                      # Показать помощь")
     return 0
 
@@ -331,9 +336,6 @@ def run_ir_generation(args):
 
     # Генерация IR
     try:
-        from ir.ir_generator import IRGenerator
-        from ir.ir_printer import IRPrinter
-        
         ir_gen = IRGenerator(analyzer.get_symbol_table(), analyzer.type_system)
         ir_program = ir_gen.generate(ast)
 
@@ -373,6 +375,166 @@ def run_ir_generation(args):
         return 1
     except Exception as e:
         print(f"Ошибка при генерации IR: {e}")
+        return 1
+
+    return 0
+
+
+def run_compilation(args):
+    """Запускает генерацию x86-64 ассемблера (Sprint 5)"""
+    output_file = None
+    filename = None
+    verbose = False
+    run_program = False
+    
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "--output" and i + 1 < len(args):
+            output_file = args[i + 1]
+            i += 2
+        elif arg == "--verbose" or arg == "-v":
+            verbose = True
+            i += 1
+        elif arg == "--run":
+            run_program = True
+            i += 1
+        elif arg.startswith("--"):
+            print(f"Неизвестная опция: {arg}")
+            return 1
+        else:
+            filename = arg
+            i += 1
+
+    if not filename:
+        print("Ошибка: укажите файл для анализа")
+        print("Используйте 'compiler compile --help' для справки")
+        return 1
+
+    if not os.path.exists(filename):
+        print(f"Ошибка: файл '{filename}' не найден")
+        return 1
+
+    with open(filename, 'r', encoding='utf-8') as f:
+        source = f.read()
+
+    if verbose:
+        print(f"Компиляция файла: {filename}")
+
+    # Лексический анализ
+    scanner = Scanner(source)
+    if scanner.errors:
+        print("Ошибки лексического анализа:")
+        for error in scanner.errors:
+            print(f"  {error}")
+        return 1
+
+    # Синтаксический анализ
+    parser = Parser(scanner.tokens)
+    try:
+        ast = parser.parse()
+    except Exception as e:
+        print(f"Ошибка парсера: {e}")
+        return 1
+
+    if parser.errors:
+        print("\nОшибки синтаксического анализа:")
+        for error in parser.errors:
+            print(f"  {error}")
+        return 1
+
+    # Семантический анализ
+    analyzer = SemanticAnalyzer(verbose=verbose)
+    analyzer.analyze(ast, source)
+
+    if analyzer.has_errors():
+        print("\nОшибки семантического анализа:")
+        analyzer.print_errors()
+        return 1
+
+    # Генерация IR
+    ir_gen = IRGenerator(analyzer.get_symbol_table(), analyzer.type_system)
+    ir_program = ir_gen.generate(ast)
+
+    if verbose:
+        print("\nСгенерированный IR:")
+        print(IRPrinter.print_program(ir_program))
+        print()
+
+    # Генерация ассемблера
+    try:
+        from codegen.x86_generator import X86Generator
+        
+        asm_gen = X86Generator()
+        assembly = asm_gen.generate(ir_program)
+        
+        # Определяем имя выходного файла
+        if not output_file:
+            output_file = filename.replace('.src', '.asm')
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(assembly)
+        
+        print(f" Ассемблер сохранен в: {output_file}")
+        
+        if verbose:
+            # Статистика
+            total_blocks = sum(len(f.basic_blocks) for f in ir_program.functions)
+            total_instrs = sum(len(b.instructions) for f in ir_program.functions for b in f.basic_blocks)
+            print(f"\n Статистика:")
+            print(f"  Функций: {len(ir_program.functions)}")
+            print(f"  Базовых блоков: {total_blocks}")
+            print(f"  Инструкций IR: {total_instrs}")
+            print(f"  Временных переменных: {sum(f.temp_counter for f in ir_program.functions)}")
+            print(f"  Размер ассемблера: {len(assembly)} символов")
+        
+        # Запуск программы (если указан флаг --run)
+        if run_program:
+            print("\n Сборка и запуск программы...")
+            
+            # Сборка с NASM и LD
+            obj_file = output_file.replace('.asm', '.o')
+            exe_file = output_file.replace('.asm', '')
+            runtime_asm = os.path.join(os.path.dirname(__file__), 'runtime', 'runtime.asm')
+            runtime_obj = obj_file.replace('.o', '_runtime.o')
+            
+            # Проверяем наличие NASM
+            nasm_check = subprocess.run(['nasm', '--version'], capture_output=True, text=True)
+            if nasm_check.returncode != 0:
+                print(" NASM не установлен. Установите NASM для сборки программы.")
+                print(f"   Ассемблер сохранен в {output_file}")
+                return 0
+            
+            # Ассемблирование
+            print(f"   nasm -f elf64 {output_file} -o {obj_file}")
+            subprocess.run(['nasm', '-f', 'elf64', output_file, '-o', obj_file], check=False)
+            
+            # Ассемблирование runtime
+            if os.path.exists(runtime_asm):
+                print(f"   nasm -f elf64 {runtime_asm} -o {runtime_obj}")
+                subprocess.run(['nasm', '-f', 'elf64', runtime_asm, '-o', runtime_obj], check=False)
+            
+            # Линковка
+            print(f"   ld -o {exe_file} {runtime_obj} {obj_file}")
+            subprocess.run(['ld', '-o', exe_file, runtime_obj, obj_file], check=False)
+            
+            # Запуск
+            if os.path.exists(exe_file):
+                print(f"\n▶ Запуск: ./{exe_file}")
+                result = subprocess.run([f'./{exe_file}'], capture_output=True, text=True)
+                if result.stdout:
+                    print(f"Вывод: {result.stdout}")
+                if result.returncode is not None:
+                    print(f"Код возврата: {result.returncode}")
+            else:
+                print(" Ошибка сборки")
+        
+    except ImportError as e:
+        print(f"Ошибка импорта модуля codegen: {e}")
+        print("Убедитесь, что все файлы в src/codegen/ созданы")
+        return 1
+    except Exception as e:
+        print(f"Ошибка при генерации ассемблера: {e}")
         return 1
 
     return 0
@@ -539,6 +701,9 @@ def main():
 
     elif command == "ir":
         return run_ir_generation(sys.argv[2:])
+
+    elif command == "compile":
+        return run_compilation(sys.argv[2:])
 
     else:
         # Для обратной совместимости: если просто файл без команды
