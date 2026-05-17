@@ -321,3 +321,23 @@ python src\main.py compile test1.src
 python src\main.py compile test1.src --output program.asm
 python src\main.py compile test1.src --verbose
 type test1.asm
+
+# Создаем тест с функцией
+python -c "open('test_call.src', 'w', encoding='utf-8').write('fn add(int a, int b) -> int { return a + b; }\nfn main() -> int { return add(5, 3); }')"
+
+# Компилируем
+python src/main.py compile test_call.src
+
+# Смотрим ассемблер
+type test_call.asm
+
+# Тест 1: Несуществующая функция(инвалидные тесты)
+python -c "open('tests/codegen/invalid/assembly_errors/undefined_function.src','w',encoding='utf-8').write('fn main() -> int { return unknown(); }')"
+python src/main.py compile tests/codegen/invalid/assembly_errors/undefined_function.src
+
+# Тест 2: Неправильный тип (строка вместо числа)
+python -c "open('tests/codegen/invalid/runtime_errors/type_error.src','w',encoding='utf-8').write('fn main() -> int { int x = \"hello\"; return x; }')"
+python src/main.py compile tests/codegen/invalid/runtime_errors/type_error.src
+
+# Запуск тестов
+python tests/codegen/test_runner.py
