@@ -341,3 +341,30 @@ python src/main.py compile tests/codegen/invalid/runtime_errors/type_error.src
 
 # Запуск тестов
 python tests/codegen/test_runner.py
+
+
+## Sprint 6: Control flow and short-circuit evaluition
+# Сначала посмотреть IR
+python src/main.py ir tests/control_flow/valid/conditionals/if_else.src
+
+# Потом скомпилировать в ассемблер
+python src/main.py compile tests/control_flow/valid/conditionals/if_else.src
+cd C:\Users\Пользователь\Desktop\compiler-project
+
+# While loop тест
+python src/main.py compile tests/control_flow/valid/loops/while_loop.src --verbose
+
+# For loop тест
+python src/main.py compile tests/control_flow/valid/loops/for_loop.src --verbose
+
+# Logical AND тест
+python src/main.py compile tests/control_flow/valid/logical_ops/short_circuit_and.src --verbose
+
+# Precedence тест
+python src/main.py compile tests/control_flow/valid/complex_expressions/precedence.src --verbose
+
+# Первый запуск - сгенерирует expected файлы
+python tests\control_flow\test_golden.py
+
+# Второй запуск - сравнит с expected
+python tests\control_flow\test_golden.py

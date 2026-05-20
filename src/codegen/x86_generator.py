@@ -1,13 +1,15 @@
-"""x86-64 code generator from IR"""
+"""x86-64 code generator from IR with control flow support"""
 
 from typing import List, Dict, Optional
 from ir.ir_instructions import Instruction, InstructionType, Operand, IRFunction, IRProgram
 from .abi import ABI
 from .stack_frame import StackFrame
+from .label_manager import LabelManager
+from .control_flow_generator import ControlFlowGenerator
 
 
 class X86Generator:
-    """Generates x86-64 assembly from IR"""
+    """Generates x86-64 assembly from IR with control flow support"""
     
     def __init__(self):
         self.sections = {
@@ -19,8 +21,10 @@ class X86Generator:
         self.current_function: Optional[IRFunction] = None
         self.stack_frame: Optional[StackFrame] = None
         self.label_counter = 0
-        self.temp_offset: Dict[str, int] = {}  # temp -> stack offset
+        self.temp_offset: Dict[str, int] = {}
         self.next_offset = -8
+        self.label_manager = LabelManager()
+        self.cf_generator = None
     
     def generate(self, program: IRProgram) -> str:
         """Generate assembly for entire IR program"""
@@ -49,6 +53,8 @@ class X86Generator:
         self.stack_frame = StackFrame(func.name)
         self.temp_offset = {}
         self.next_offset = -8
+        self.label_manager.reset()
+        self.cf_generator = ControlFlowGenerator(self.label_manager)
         
         # First pass: collect all temporaries and allocate stack slots
         for block in func.basic_blocks:
@@ -118,6 +124,20 @@ class X86Generator:
             self.gen_call(instr)
         elif instr.type == InstructionType.PARAM:
             self.gen_param(instr)
+        elif instr.type == InstructionType.LABEL:
+            self.gen_label(instr)
+        elif instr.type == InstructionType.AND:
+            self.gen_logical_and(instr)
+        elif instr.type == InstructionType.OR:
+            self.gen_logical_or(instr)
+        elif instr.type == InstructionType.NOT:
+            self.gen_logical_not(instr)
+        elif instr.type == InstructionType.CMP_EQ:
+            self.gen_cmp_eq(instr)
+        elif instr.type == InstructionType.CMP_LT:
+            self.gen_cmp_lt(instr)
+        elif instr.type == InstructionType.CMP_GT:
+            self.gen_cmp_gt(instr)
     
     def get_operand(self, op: Operand) -> str:
         """Convert IR operand to assembly string"""
@@ -129,9 +149,8 @@ class X86Generator:
         elif op.operand_type == "label":
             return op.value
         elif op.operand_type == "var":
-            return f"[rbp-8]"  # временно
+            return f"[rbp-8]"
         elif op.operand_type == "temp":
-            # Get stack offset for this temporary
             name = op.value
             if name in self.temp_offset:
                 offset = self.temp_offset[name]
@@ -188,7 +207,13 @@ class X86Generator:
         
         if src == dest:
             return
-        self.sections['text'].append(f"    mov {dest}, {src}")
+        
+        # Handle memory to memory move
+        if src.startswith('[') and dest.startswith('['):
+            self.sections['text'].append(f"    mov eax, {src}")
+            self.sections['text'].append(f"    mov {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, {src}")
     
     def gen_return(self, instr: Instruction):
         """Generate RETURN instruction"""
@@ -212,6 +237,103 @@ class X86Generator:
         self.sections['text'].append(f"    cmp {cond}, 0")
         self.sections['text'].append(f"    jne {target}")
     
+    def gen_label(self, instr: Instruction):
+        """Generate LABEL instruction"""
+        if instr.label:
+            self.sections['text'].append(f"{instr.label}:")
+    
+    def gen_logical_and(self, instr: Instruction):
+        """Generate short-circuit AND (&&)"""
+        # For AND: result = left && right
+        left = self.get_operand(instr.src1)
+        right = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        
+        false_label = self.label_manager.new_label("L_false")
+        end_label = self.label_manager.new_label("L_end")
+        
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, 0")
+        self.sections['text'].append(f"    je {false_label}")
+        self.sections['text'].append(f"    mov eax, {right}")
+        self.sections['text'].append(f"    cmp eax, 0")
+        self.sections['text'].append(f"    je {false_label}")
+        self.sections['text'].append(f"    mov eax, 1")
+        self.sections['text'].append(f"    jmp {end_label}")
+        self.sections['text'].append(f"{false_label}:")
+        self.sections['text'].append(f"    mov eax, 0")
+        self.sections['text'].append(f"{end_label}:")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
+    def gen_logical_or(self, instr: Instruction):
+        """Generate short-circuit OR (||)"""
+        left = self.get_operand(instr.src1)
+        right = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        
+        true_label = self.label_manager.new_label("L_true")
+        end_label = self.label_manager.new_label("L_end")
+        
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, 0")
+        self.sections['text'].append(f"    jne {true_label}")
+        self.sections['text'].append(f"    mov eax, {right}")
+        self.sections['text'].append(f"    cmp eax, 0")
+        self.sections['text'].append(f"    jne {true_label}")
+        self.sections['text'].append(f"    mov eax, 0")
+        self.sections['text'].append(f"    jmp {end_label}")
+        self.sections['text'].append(f"{true_label}:")
+        self.sections['text'].append(f"    mov eax, 1")
+        self.sections['text'].append(f"{end_label}:")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
+    def gen_logical_not(self, instr: Instruction):
+        """Generate NOT (!) instruction"""
+        src = self.get_operand(instr.src1)
+        dest = self.get_operand(instr.dest)
+        
+        self.sections['text'].append(f"    mov eax, {src}")
+        self.sections['text'].append(f"    cmp eax, 0")
+        self.sections['text'].append(f"    sete al")
+        self.sections['text'].append(f"    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
+    def gen_cmp_eq(self, instr: Instruction):
+        """Generate equality comparison (==)"""
+        left = self.get_operand(instr.src1)
+        right = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append(f"    sete al")
+        self.sections['text'].append(f"    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
+    def gen_cmp_lt(self, instr: Instruction):
+        """Generate less than comparison (<)"""
+        left = self.get_operand(instr.src1)
+        right = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append(f"    setl al")
+        self.sections['text'].append(f"    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
+    def gen_cmp_gt(self, instr: Instruction):
+        """Generate greater than comparison (>)"""
+        left = self.get_operand(instr.src1)
+        right = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append(f"    setg al")
+        self.sections['text'].append(f"    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+    
     def gen_call(self, instr: Instruction):
         """Generate CALL instruction"""
         func_name = instr.src1.value
@@ -220,20 +342,17 @@ class X86Generator:
         if instr.dest:
             dest = self.get_operand(instr.dest)
             self.sections['text'].append(f"    mov {dest}, eax")
-
+    
     def gen_param(self, instr: Instruction):
         """Generate PARAM instruction"""
         index = int(instr.src1.value) if instr.src1 else 0
         value = self.get_operand(instr.src2)
         
         # System V ABI: первые 6 целочисленных аргументов в RDI, RSI, RDX, RCX, R8, R9
-        registers_64 = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
         registers_32 = ['edi', 'esi', 'edx', 'ecx', 'r8d', 'r9d']
         
-        if index < len(registers_64):
-            # Используем 32-битные регистры для тестов
-            reg = registers_32[index]
-            self.sections['text'].append(f"    mov {reg}, {value}")
+        if index < len(registers_32):
+            self.sections['text'].append(f"    mov {registers_32[index]}, {value}")
         else:
             self.sections['text'].append(f"    push {value}")
     

@@ -7,6 +7,7 @@
   Sprint 3: семантический анализ
   Sprint 4: генерация промежуточного представления (IR)
   Sprint 5: генерация x86-64 ассемблера
+  Sprint 6: сложные управляющие конструкции (if/while/for, короткое замыкание)
 """
 
 import sys
@@ -48,6 +49,8 @@ def print_usage():
     print("  compiler test-parser                 # Запустить тесты парсера")
     print("  compiler test-semantic               # Запустить тесты семантического анализа")
     print("  compiler test-ir                     # Запустить тесты IR генерации")
+    print("  compiler test-codegen                # Запустить тесты codegen (Sprint 5)")
+    print("  compiler test-control-flow           # Запустить тесты control flow (Sprint 6)")
     print("  compiler --help                      # Показать помощь")
     return 0
 
@@ -578,6 +581,24 @@ def run_tests(test_type: str):
             os.system(f'python -m unittest "{test_ir}" -v')
         else:
             print("Ошибка: test_ir_generation.py не найден")
+    elif test_type == "codegen":
+        test_codegen = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'tests', 'codegen', 'test_runner.py'
+        )
+        if os.path.exists(test_codegen):
+            os.system(f'python "{test_codegen}"')
+        else:
+            print("Ошибка: codegen/test_runner.py не найден")
+    elif test_type == "control-flow":
+        test_cf = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'tests', 'control_flow', 'test_runner.py'
+        )
+        if os.path.exists(test_cf):
+            os.system(f'python "{test_cf}"')
+        else:
+            print("Ошибка: control_flow/test_runner.py не найден")
     return 0
 
 
@@ -686,6 +707,12 @@ def main():
 
     elif command == "test-ir":
         return run_tests("ir")
+    
+    elif command == "test-codegen":
+        return run_tests("codegen")
+    
+    elif command == "test-control-flow":
+        return run_tests("control-flow")
 
     elif command == "lex":
         if len(sys.argv) < 3:
