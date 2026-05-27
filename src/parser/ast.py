@@ -11,7 +11,7 @@ class ProgramNode(ASTNode):
         super().__init__(line, column)
         self.declarations = declarations
 
-# --- Declarations (AST-4) ---
+# Declarations (AST-4)
 class DeclarationNode(ASTNode): pass
 
 class FunctionDeclNode(DeclarationNode):
@@ -34,7 +34,7 @@ class ParamNode(ASTNode):
         self.type_name = type_name
         self.name = name
 
-# --- Statements (AST-3) ---
+#Statements (AST-3)
 class StatementNode(ASTNode): pass
 
 class BlockStmtNode(StatementNode):
@@ -80,7 +80,7 @@ class ExprStmtNode(StatementNode):
         super().__init__(line, column)
         self.expression = expression
 
-# --- Expressions (AST-2) ---
+# Expressions (AST-2)
 class ExpressionNode(ASTNode): pass
 
 class LiteralExprNode(ExpressionNode):
@@ -119,3 +119,77 @@ class AssignmentExprNode(ExpressionNode):
         self.target = target
         self.operator = operator
         self.value = value
+        
+class ArrayTypeNode(ASTNode):
+    """Array type node"""
+    def __init__(self, element_type, size, line=None, column=None):
+        super().__init__(line, column)
+        self.element_type = element_type  # TypeNode
+        self.size = size  # int or None for unsized
+
+class ArrayDeclNode(DeclarationNode):
+    """Array declaration"""
+    def __init__(self, type_node, name, size, initializer=None, line=None, column=None):
+        super().__init__(line, column)
+        self.type_node = type_node
+        self.name = name
+        self.size = size
+        self.initializer = initializer  # list of expressions or None
+
+class ArrayAccessNode(ExpressionNode):
+    """Array access: arr[index]"""
+    def __init__(self, array, index, line=None, column=None):
+        super().__init__(line, column)
+        self.array = array
+        self.index = index
+
+class ExternFunctionNode(DeclarationNode):
+    """External function declaration"""
+    def __init__(self, name, return_type, params, is_variadic, line=None, column=None):
+        super().__init__(line, column)
+        self.name = name
+        self.return_type = return_type
+        self.params = params
+        self.is_variadic = is_variadic
+
+# Sprint 7: Array nodes
+class ArrayTypeNode(ASTNode):
+    """Array type node: int[5]"""
+    def __init__(self, element_type, size, line=None, column=None):
+        super().__init__(line, column)
+        self.element_type = element_type
+        self.size = size
+
+class ArrayDeclNode(DeclarationNode):
+    """Array declaration: int arr[5] = {1,2,3}"""
+    def __init__(self, type_name, name, size, initializer=None, line=None, column=None):
+        super().__init__(line, column)
+        self.type_name = type_name
+        self.name = name
+        self.size = size
+        self.initializer = initializer
+
+class ArrayAccessNode(ExpressionNode):
+    """Array access: arr[i]"""
+    def __init__(self, array, index, line=None, column=None):
+        super().__init__(line, column)
+        self.array = array
+        self.index = index
+
+class ArrayAssignmentNode(ExpressionNode):
+    """Array assignment: arr[i] = value"""
+    def __init__(self, array, index, operator, value, line=None, column=None):
+        super().__init__(line, column)
+        self.array = array
+        self.index = index
+        self.operator = operator
+        self.value = value
+
+class ExternFunctionNode(DeclarationNode):
+    """External function declaration: extern int printf(char* format, ...);"""
+    def __init__(self, name, return_type, params, is_variadic, line=None, column=None):
+        super().__init__(line, column)
+        self.name = name
+        self.return_type = return_type
+        self.params = params
+        self.is_variadic = is_variadic

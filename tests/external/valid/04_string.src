@@ -1,0 +1,9 @@
+extern int strlen(char* str);
+extern char* strcpy(char* dest, char* src);
+extern int strcmp(char* s1, char* s2);
+fn main() -> int {
+    char str[20];
+    strcpy(str, "hello");
+    int len = strlen(str);
+    return len;
+}

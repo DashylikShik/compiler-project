@@ -8,6 +8,7 @@
   Sprint 4: генерация промежуточного представления (IR)
   Sprint 5: генерация x86-64 ассемблера
   Sprint 6: сложные управляющие конструкции (if/while/for, короткое замыкание)
+  Sprint 7: массивы, внешние вызовы, оптимизации
 """
 
 import sys
@@ -28,6 +29,9 @@ from semantic.analyzer import SemanticAnalyzer
 from semantic.errors import SemanticError
 from ir.ir_generator import IRGenerator
 from ir.ir_printer import IRPrinter
+from ir.optimizer.constant_folding import ConstantFolding
+from ir.optimizer.constant_propagation import ConstantPropagation
+from ir.optimizer.dead_code import DeadCodeElimination
 
 
 def print_usage():
@@ -38,6 +42,7 @@ def print_usage():
     print("  compiler check <file.src>            # Семантический анализ (Sprint 3)")
     print("  compiler ir <file.src>               # Генерация IR (Sprint 4)")
     print("  compiler compile <file.src>          # Генерация x86-64 ассемблера (Sprint 5)")
+    print("  compiler compile --optimize <file.src> # С оптимизациями (Sprint 7)")
     print("  compiler check --verbose <file.src>  # Семантический анализ с подробным выводом")
     print("  compiler check --symbols <file.src>  # Вывести таблицу символов")
     print("  compiler ir --verbose <file.src>     # IR с подробной статистикой")
@@ -51,6 +56,7 @@ def print_usage():
     print("  compiler test-ir                     # Запустить тесты IR генерации")
     print("  compiler test-codegen                # Запустить тесты codegen (Sprint 5)")
     print("  compiler test-control-flow           # Запустить тесты control flow (Sprint 6)")
+    print("  compiler test-optimization           # Запустить тесты оптимизации (Sprint 7)")
     print("  compiler --help                      # Показать помощь")
     return 0
 
@@ -83,7 +89,6 @@ def run_lexer(filename):
 
 def run_parser(args):
     """Запускает синтаксический анализ с AST (Sprint 2)"""
-    # Парсим аргументы командной строки
     format_type = "text"
     output_file = None
     filename = None
@@ -112,13 +117,11 @@ def run_parser(args):
         print(f"Ошибка: файл '{filename}' не найден")
         return 1
 
-    # Читаем исходный файл
     with open(filename, 'r', encoding='utf-8') as f:
         source = f.read()
 
     print(f"Анализ файла (синтаксический): {filename}")
 
-    # Лексический анализ
     scanner = Scanner(source)
     if scanner.errors:
         print("Ошибки лексического анализа:")
@@ -126,7 +129,6 @@ def run_parser(args):
             print(f"  {error}")
         return 1
 
-    # Синтаксический анализ
     parser = Parser(scanner.tokens)
     try:
         ast = parser.parse()
@@ -140,7 +142,6 @@ def run_parser(args):
             print(f"  {error}")
         return 1
 
-    # Вывод AST в запрошенном формате
     if format_type == "text":
         output = ASTPrinter.print(ast)
     elif format_type == "dot":
@@ -195,13 +196,11 @@ def run_semantic_analysis(args):
         print(f"Ошибка: файл '{filename}' не найден")
         return 1
 
-    # Читаем исходный файл
     with open(filename, 'r', encoding='utf-8') as f:
         source = f.read()
 
     print(f"Анализ файла (семантический): {filename}")
 
-    # Лексический анализ
     scanner = Scanner(source)
     if scanner.errors:
         print("Ошибки лексического анализа:")
@@ -209,7 +208,6 @@ def run_semantic_analysis(args):
             print(f"  {error}")
         return 1
 
-    # Синтаксический анализ
     parser = Parser(scanner.tokens)
     try:
         ast = parser.parse()
@@ -223,19 +221,15 @@ def run_semantic_analysis(args):
             print(f"  {error}")
         return 1
 
-    # Семантический анализ
     analyzer = SemanticAnalyzer(verbose=verbose)
     analyzer.analyze(ast, source)
 
-    # Вывод результатов
     if analyzer.has_errors():
         print("\nОшибки семантического анализа:")
         analyzer.print_errors()
         print(f"\nНайдено ошибок: {len(analyzer.get_errors())}")
     else:
         print("\nСемантических ошибок не найдено!")
-    
-
     
     if show_symbols:
         print(analyzer.get_symbol_table().dump())
@@ -255,7 +249,6 @@ def run_ir_generation(args):
     format_type = "text"
     filename = None
 
-    # Если нет аргументов или первый аргумент --help
     if not args or args[0] == "--help" or args[0] == "-h":
         print("Генерация IR (Sprint 4)")
         print("Использование:")
@@ -306,7 +299,6 @@ def run_ir_generation(args):
 
     print(f"Генерация IR для файла: {filename}")
 
-    # Лексический анализ
     scanner = Scanner(source)
     if scanner.errors:
         print("Ошибки лексического анализа:")
@@ -314,7 +306,6 @@ def run_ir_generation(args):
             print(f"  {error}")
         return 1
 
-    # Синтаксический анализ
     parser = Parser(scanner.tokens)
     try:
         ast = parser.parse()
@@ -328,7 +319,6 @@ def run_ir_generation(args):
             print(f"  {error}")
         return 1
 
-    # Семантический анализ
     analyzer = SemanticAnalyzer(verbose=verbose)
     analyzer.analyze(ast, source)
 
@@ -337,12 +327,10 @@ def run_ir_generation(args):
         analyzer.print_errors()
         return 1
 
-    # Генерация IR
     try:
         ir_gen = IRGenerator(analyzer.get_symbol_table(), analyzer.type_system)
         ir_program = ir_gen.generate(ast)
 
-        # Вывод IR в зависимости от формата
         if format_type == "text":
             output = IRPrinter.print_program(ir_program)
         elif format_type == "dot":
@@ -384,11 +372,12 @@ def run_ir_generation(args):
 
 
 def run_compilation(args):
-    """Запускает генерацию x86-64 ассемблера (Sprint 5)"""
+    """Запускает генерацию x86-64 ассемблера (Sprint 5) с оптимизациями (Sprint 7)"""
     output_file = None
     filename = None
     verbose = False
     run_program = False
+    optimize = False
     
     i = 0
     while i < len(args):
@@ -401,6 +390,9 @@ def run_compilation(args):
             i += 1
         elif arg == "--run":
             run_program = True
+            i += 1
+        elif arg == "--optimize" or arg == "-O":
+            optimize = True
             i += 1
         elif arg.startswith("--"):
             print(f"Неизвестная опция: {arg}")
@@ -424,7 +416,6 @@ def run_compilation(args):
     if verbose:
         print(f"Компиляция файла: {filename}")
 
-    # Лексический анализ
     scanner = Scanner(source)
     if scanner.errors:
         print("Ошибки лексического анализа:")
@@ -432,7 +423,6 @@ def run_compilation(args):
             print(f"  {error}")
         return 1
 
-    # Синтаксический анализ
     parser = Parser(scanner.tokens)
     try:
         ast = parser.parse()
@@ -446,7 +436,6 @@ def run_compilation(args):
             print(f"  {error}")
         return 1
 
-    # Семантический анализ
     analyzer = SemanticAnalyzer(verbose=verbose)
     analyzer.analyze(ast, source)
 
@@ -455,23 +444,55 @@ def run_compilation(args):
         analyzer.print_errors()
         return 1
 
-    # Генерация IR
     ir_gen = IRGenerator(analyzer.get_symbol_table(), analyzer.type_system)
     ir_program = ir_gen.generate(ast)
+
+    # Оптимизации (Sprint 7)
+    if optimize:
+        try:
+            from ir.optimizer.constant_folding import ConstantFolding
+            from ir.optimizer.constant_propagation import ConstantPropagation
+            from ir.optimizer.dead_code import DeadCodeElimination
+            
+            if verbose:
+                print("\n Применение оптимизаций...")
+            
+            # Порядок важен!
+            folding = ConstantFolding()
+            folding.optimize(ir_program)
+            
+            propagation = ConstantPropagation()
+            propagation.optimize(ir_program)
+            
+            dce = DeadCodeElimination()
+            dce.optimize(ir_program)
+            
+            if verbose:
+                print("\n Optimization Statistics:")
+                stats = folding.get_stats()
+                for k, v in stats.items():
+                    print(f"  {k}: {v}")
+                stats2 = propagation.get_stats()
+                for k, v in stats2.items():
+                    print(f"  {k}: {v}")
+                stats3 = dce.get_stats()
+                for k, v in stats3.items():
+                    print(f"  {k}: {v}")
+        except ImportError as e:
+            if verbose:
+                print(f"   Оптимизации не доступны: {e}")
 
     if verbose:
         print("\nСгенерированный IR:")
         print(IRPrinter.print_program(ir_program))
         print()
 
-    # Генерация ассемблера
     try:
         from codegen.x86_generator import X86Generator
         
         asm_gen = X86Generator()
         assembly = asm_gen.generate(ir_program)
         
-        # Определяем имя выходного файла
         if not output_file:
             output_file = filename.replace('.src', '.asm')
         
@@ -481,7 +502,6 @@ def run_compilation(args):
         print(f" Ассемблер сохранен в: {output_file}")
         
         if verbose:
-            # Статистика
             total_blocks = sum(len(f.basic_blocks) for f in ir_program.functions)
             total_instrs = sum(len(b.instructions) for f in ir_program.functions for b in f.basic_blocks)
             print(f"\n Статистика:")
@@ -491,37 +511,30 @@ def run_compilation(args):
             print(f"  Временных переменных: {sum(f.temp_counter for f in ir_program.functions)}")
             print(f"  Размер ассемблера: {len(assembly)} символов")
         
-        # Запуск программы (если указан флаг --run)
         if run_program:
             print("\n Сборка и запуск программы...")
             
-            # Сборка с NASM и LD
             obj_file = output_file.replace('.asm', '.o')
             exe_file = output_file.replace('.asm', '')
             runtime_asm = os.path.join(os.path.dirname(__file__), 'runtime', 'runtime.asm')
             runtime_obj = obj_file.replace('.o', '_runtime.o')
             
-            # Проверяем наличие NASM
             nasm_check = subprocess.run(['nasm', '--version'], capture_output=True, text=True)
             if nasm_check.returncode != 0:
                 print(" NASM не установлен. Установите NASM для сборки программы.")
                 print(f"   Ассемблер сохранен в {output_file}")
                 return 0
             
-            # Ассемблирование
             print(f"   nasm -f elf64 {output_file} -o {obj_file}")
             subprocess.run(['nasm', '-f', 'elf64', output_file, '-o', obj_file], check=False)
             
-            # Ассемблирование runtime
             if os.path.exists(runtime_asm):
                 print(f"   nasm -f elf64 {runtime_asm} -o {runtime_obj}")
                 subprocess.run(['nasm', '-f', 'elf64', runtime_asm, '-o', runtime_obj], check=False)
             
-            # Линковка
             print(f"   ld -o {exe_file} {runtime_obj} {obj_file}")
             subprocess.run(['ld', '-o', exe_file, runtime_obj, obj_file], check=False)
             
-            # Запуск
             if os.path.exists(exe_file):
                 print(f"\n▶ Запуск: ./{exe_file}")
                 result = subprocess.run([f'./{exe_file}'], capture_output=True, text=True)
@@ -599,6 +612,15 @@ def run_tests(test_type: str):
             os.system(f'python "{test_cf}"')
         else:
             print("Ошибка: control_flow/test_runner.py не найден")
+    elif test_type == "optimization":
+        test_opt = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'tests', 'optimization', 'test_constant_folding.py'
+        )
+        if os.path.exists(test_opt):
+            os.system(f'python -m unittest "{test_opt}" -v')
+        else:
+            print("Ошибка: optimization/test_constant_folding.py не найден")
     return 0
 
 
@@ -607,14 +629,12 @@ def ast_to_dict(node):
     if node is None:
         return None
     
-    # Базовая информация о узле
     result = {
         "type": node.__class__.__name__,
         "line": getattr(node, 'line', 0),
         "column": getattr(node, 'column', 0)
     }
     
-    # Добавляем атрибуты в зависимости от типа узла
     if hasattr(node, 'name'):
         result["name"] = node.name
     if hasattr(node, 'value'):
@@ -629,55 +649,38 @@ def ast_to_dict(node):
     if hasattr(node, 'literal_type'):
         result["literal_type"] = node.literal_type
     
-    # Обрабатываем детей
     if hasattr(node, 'declarations') and node.declarations:
         result["declarations"] = [ast_to_dict(d) for d in node.declarations]
-    
     if hasattr(node, 'params') and node.params:
         result["params"] = [ast_to_dict(p) for p in node.params]
-    
     if hasattr(node, 'fields') and node.fields:
         result["fields"] = [ast_to_dict(f) for f in node.fields]
-    
     if hasattr(node, 'body'):
         result["body"] = ast_to_dict(node.body)
-    
     if hasattr(node, 'statements') and node.statements:
         result["statements"] = [ast_to_dict(s) for s in node.statements]
-    
     if hasattr(node, 'condition'):
         result["condition"] = ast_to_dict(node.condition)
-    
     if hasattr(node, 'then_branch'):
         result["then_branch"] = ast_to_dict(node.then_branch)
-    
     if hasattr(node, 'else_branch'):
         result["else_branch"] = ast_to_dict(node.else_branch)
-    
     if hasattr(node, 'init'):
         result["init"] = ast_to_dict(node.init)
-    
     if hasattr(node, 'update'):
         result["update"] = ast_to_dict(node.update)
-    
     if hasattr(node, 'left'):
         result["left"] = ast_to_dict(node.left)
-    
     if hasattr(node, 'right'):
         result["right"] = ast_to_dict(node.right)
-    
     if hasattr(node, 'operand'):
         result["operand"] = ast_to_dict(node.operand)
-    
     if hasattr(node, 'callee'):
         result["callee"] = node.callee.name if hasattr(node.callee, 'name') else str(node.callee)
-    
     if hasattr(node, 'arguments') and node.arguments:
         result["arguments"] = [ast_to_dict(a) for a in node.arguments]
-    
     if hasattr(node, 'target'):
         result["target"] = ast_to_dict(node.target)
-    
     if hasattr(node, 'initializer'):
         result["initializer"] = ast_to_dict(node.initializer)
     
@@ -713,6 +716,9 @@ def main():
     
     elif command == "test-control-flow":
         return run_tests("control-flow")
+    
+    elif command == "test-optimization":
+        return run_tests("optimization")
 
     elif command == "lex":
         if len(sys.argv) < 3:
@@ -733,7 +739,6 @@ def main():
         return run_compilation(sys.argv[2:])
 
     else:
-        # Для обратной совместимости: если просто файл без команды
         filename = sys.argv[1]
         return run_lexer(filename)
 

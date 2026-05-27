@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Any
 from parser.ast import *
 from .symbol_table import SymbolTable, SymbolInfo, SymbolKind
-from .type_system import TypeSystem, Type, BaseType
+from .type_system import TypeSystem, Type, BaseType, ArrayType
 from .errors import *
 
 
@@ -40,51 +40,43 @@ class SemanticAnalyzer:
             for decl in node.declarations:
                 self.collect_declarations(decl)
         
-        elif isinstance(node, FunctionDeclNode):
-            # Check for duplicate function
-            existing = self.symbol_table.lookup_global(node.name)
+        elif isinstance(node, ArrayDeclNode):
+            element_type = self.type_system.get_type(node.type_name)
+            if not element_type:
+                element_type = Type(BaseType.UNKNOWN)
+                self.errors.append(SemanticError(
+                    f"unknown type '{node.type_name}' for array",
+                    node.line, node.column
+                ))
+            
+            # Check for duplicate
+            existing = self.symbol_table.lookup_local(node.name)
             if existing:
                 self.errors.append(DuplicateDeclarationError(
                     node.name, node.line, node.column, existing.line
                 ))
                 return
             
-            # Collect parameter types
-            param_infos = []
-            param_types = []
-            for param in node.params:
-                param_type = self.type_system.get_type(param.type_name)
-                if not param_type:
-                    param_type = Type(BaseType.UNKNOWN)
-                    self.errors.append(SemanticError(
-                        f"unknown type '{param.type_name}'", 
-                        param.line, param.column
-                    ))
-                param_info = SymbolInfo(
-                    name=param.name,
-                    kind=SymbolKind.PARAMETER,
-                    type=param_type,
-                    line=param.line,
-                    column=param.column,
-                    initialized=True
-                )
-                param_infos.append(param_info)
-                param_types.append(param_type)
+            # Get array size safely
+            size_value = 0
+            if node.size:
+                if hasattr(node.size, 'value'):
+                    size_value = node.size.value
+                elif isinstance(node.size, int):
+                    size_value = node.size
+                else:
+                    size_value = 1
             
-            return_type = self.type_system.get_type(node.return_type)
-            if not return_type:
-                return_type = Type(BaseType.UNKNOWN)
-            
-            function_info = SymbolInfo(
+            # Register array variable
+            var_info = SymbolInfo(
                 name=node.name,
-                kind=SymbolKind.FUNCTION,
-                type=Type(BaseType.UNKNOWN),
+                kind=SymbolKind.VARIABLE,
+                type=element_type,  # Store element type for now
                 line=node.line,
                 column=node.column,
-                parameters=param_infos,
-                return_type=return_type
+                initialized=node.initializer is not None
             )
-            self.symbol_table.insert(node.name, function_info)
+            self.symbol_table.insert(node.name, var_info)
         
         elif isinstance(node, StructDeclNode):
             # Check for duplicate struct
@@ -114,6 +106,37 @@ class SemanticAnalyzer:
                 fields=fields
             )
             self.symbol_table.insert(node.name, struct_info)
+        
+        # Sprint 7: Array declaration
+        elif isinstance(node, ArrayDeclNode):
+            element_type = self.type_system.get_type(node.type_name)
+            if not element_type:
+                element_type = Type(BaseType.UNKNOWN)
+                self.errors.append(SemanticError(
+                    f"unknown type '{node.type_name}' for array",
+                    node.line, node.column
+                ))
+            
+            # Check for duplicate
+            existing = self.symbol_table.lookup_local(node.name)
+            if existing:
+                self.errors.append(DuplicateDeclarationError(
+                    node.name, node.line, node.column, existing.line
+                ))
+                return
+            
+            # Create array type
+            array_type = ArrayType(element_type, node.size.value if hasattr(node.size, 'value') else 1)
+            
+            var_info = SymbolInfo(
+                name=node.name,
+                kind=SymbolKind.VARIABLE,
+                type=element_type,  # Store element type for now
+                line=node.line,
+                column=node.column,
+                initialized=node.initializer is not None
+            )
+            self.symbol_table.insert(node.name, var_info)
     
     def analyze_program(self, node: ProgramNode):
         """Second pass: analyze program"""
@@ -128,6 +151,45 @@ class SemanticAnalyzer:
             self.analyze_struct(node)
         elif isinstance(node, VarDeclStmtNode):
             self.analyze_variable_declaration(node)
+        elif isinstance(node, ArrayDeclNode):
+            self.analyze_array_declaration(node)
+    
+    def analyze_array_declaration(self, node: ArrayDeclNode):
+        """Analyze array declaration"""
+        # Get element type
+        element_type = self.type_system.get_type(node.type_name)
+        if not element_type:
+            element_type = Type(BaseType.UNKNOWN)
+        
+        # Analyze size expression
+        if node.size:
+            size_type = self.analyze_expression(node.size)
+            if size_type and size_type.base != BaseType.INT:
+                self.errors.append(SemanticError(
+                    f"array size must be integer, got {size_type}",
+                    node.line, node.column
+                ))
+        
+        # Analyze initializer if present
+        if node.initializer:
+            if isinstance(node.initializer, list):
+                # Array initializer list
+                for i, init_expr in enumerate(node.initializer):
+                    init_type = self.analyze_expression(init_expr)
+                    if not self.type_system.is_compatible(init_type, element_type):
+                        self.errors.append(TypeMismatchError(
+                            init_expr.line, init_expr.column,
+                            str(element_type), str(init_type),
+                            f" in array initializer at index {i}"
+                        ))
+            else:
+                # Single initializer
+                init_type = self.analyze_expression(node.initializer)
+                if not self.type_system.is_compatible(init_type, element_type):
+                    self.errors.append(TypeMismatchError(
+                        node.line, node.column, str(element_type), str(init_type),
+                        f" in initialization of array '{node.name}'"
+                    ))
     
     def analyze_function(self, node: FunctionDeclNode):
         """Analyze function declaration"""
@@ -230,6 +292,8 @@ class SemanticAnalyzer:
             self.analyze_block(node)
         elif isinstance(node, VarDeclStmtNode):
             self.analyze_variable_declaration(node)
+        elif isinstance(node, ArrayDeclNode):
+            self.analyze_array_declaration(node)
         elif isinstance(node, IfStmtNode):
             self.analyze_if(node)
         elif isinstance(node, WhileStmtNode):
@@ -340,8 +404,36 @@ class SemanticAnalyzer:
             return self.analyze_call(node)
         elif isinstance(node, AssignmentExprNode):
             return self.analyze_assignment(node)
+        elif isinstance(node, ArrayAccessNode):
+            return self.analyze_array_access(node)
         
         return Type(BaseType.UNKNOWN)
+    
+    def analyze_array_access(self, node: ArrayAccessNode) -> Type:
+        """Analyze array access: arr[index]"""
+        # Get array variable
+        if isinstance(node.array, IdentifierExprNode):
+            symbol = self.symbol_table.lookup(node.array.name)
+            if not symbol:
+                self.errors.append(SemanticError(
+                    f"undeclared array '{node.array.name}'",
+                    node.line, node.column
+                ))
+                return Type(BaseType.ERROR)
+            
+            # Check index type
+            index_type = self.analyze_expression(node.index)
+            if index_type and index_type.base != BaseType.ERROR:
+                if index_type.base != BaseType.INT:
+                    self.errors.append(SemanticError(
+                        f"array index must be integer, got {index_type}",
+                        node.line, node.column
+                    ))
+            
+            # Return element type
+            return symbol.type
+        
+        return Type(BaseType.ERROR)
     
     def analyze_literal(self, node: LiteralExprNode) -> Type:
         """Analyze literal expression"""

@@ -32,6 +32,7 @@ class Scanner:
             'struct': TokenType.KW_STRUCT,
             'fn': TokenType.KW_FN,
             'bool': TokenType.KW_BOOL,
+            'extern': TokenType.KW_EXTERN,  # ← ДОБАВЛЕНО для Sprint 7
         }
         
         # Операторы (один символ)
@@ -56,6 +57,7 @@ class Scanner:
             ';': TokenType.SEMICOLON,
             ',': TokenType.COMMA,
             ':': TokenType.COLON,
+            '.': TokenType.DOT,  # ← ДОБАВЛЕНО для Sprint 7
         }
         
         # Двухсимвольные операторы
@@ -70,7 +72,8 @@ class Scanner:
             '-=': TokenType.OP_MINUS_ASSIGN,
             '*=': TokenType.OP_MULT_ASSIGN,
             '/=': TokenType.OP_DIV_ASSIGN,
-            "->": TokenType.OP_ARROW 
+            "->": TokenType.OP_ARROW,
+            '...': TokenType.ELLIPSIS,  # ← ДОБАВЛЕНО для Sprint 7 (вариадические функции)
         }
         
         self.scan_tokens()
@@ -111,6 +114,14 @@ class Scanner:
                 self.scan_comment()
             else:
                 self.scan_operator()
+        elif char == '.':
+            # Проверяем на троеточие ...
+            if self.peek() == '.' and self.peek_next() == '.':
+                self.advance()  # вторая точка
+                self.advance()  # третья точка
+                self.add_token(TokenType.ELLIPSIS)
+            else:
+                self.add_token(TokenType.DOT)
         else:
             self.scan_operator()
     
@@ -220,6 +231,16 @@ class Scanner:
         # Возвращаемся к началу оператора
         self.current = self.start
         self.column = self.start_column
+        
+        # Проверяем трехсимвольные операторы (троеточие)
+        if not self.is_at_end() and self.current + 2 < len(self.source):
+            three_char = self.source[self.current:self.current + 3]
+            if three_char in self.two_char_operators:
+                self.advance()
+                self.advance()
+                self.advance()
+                self.add_token(self.two_char_operators[three_char])
+                return
         
         # Проверяем двухсимвольные операторы
         if not self.is_at_end() and self.current + 1 < len(self.source):

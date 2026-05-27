@@ -132,9 +132,7 @@ class SymbolTable:
     def dump(self) -> str:
         """Dump symbol table as string for debugging"""
         lines = []
-        lines.append("=" * 60)
         lines.append("SYMBOL TABLE DUMP")
-        lines.append("=" * 60)
         
         def dump_scope(scope: Scope, indent: int):
             if not scope:
@@ -146,7 +144,6 @@ class SymbolTable:
                 dump_scope(scope.parent, indent + 1)
         
         dump_scope(self.current_scope, 0)
-        lines.append("=" * 60)
         return "\n".join(lines)
     
     def __str__(self):

@@ -1,0 +1,45 @@
+extern int printf(char* format, ...);
+
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int partition(int arr[], int low, int high) {
+    int pivot = arr[high];
+    int i = low - 1;
+    for (int j = low; j < high; j = j + 1) {
+        if (arr[j] <= pivot) {
+            i = i + 1;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    return i + 1;
+}
+
+void quicksort(int arr[], int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quicksort(arr, low, pi - 1);
+        quicksort(arr, pi + 1, high);
+    }
+}
+
+void print_array(int arr[], int size) {
+    for (int i = 0; i < size; i = i + 1) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    int arr[8] = {10, 7, 8, 9, 1, 5, 3, 6};
+    printf("Original array: ");
+    print_array(arr, 8);
+    quicksort(arr, 0, 7);
+    printf("Sorted array: ");
+    print_array(arr, 8);
+    return 0;
+}

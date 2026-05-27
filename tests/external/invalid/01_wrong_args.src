@@ -1,0 +1,5 @@
+extern int printf(char* format, ...);
+fn main() -> int {
+    printf();
+    return 0;
+}

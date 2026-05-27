@@ -5,7 +5,6 @@ from typing import List, Optional, Any
 from enum import Enum
 from semantic.type_system import Type, BaseType
 
-
 class InstructionType(Enum):
     """Types of IR instructions"""
     # Arithmetic
@@ -133,6 +132,33 @@ class Instruction:
             # Binary operations
             return f"  {self.dest} = {self.type.value} {self.src1}, {self.src2}"
 
+@dataclass
+class BasicBlock:
+    """Basic block - sequence of instructions with single entry/exit"""
+    label: str
+    instructions: List[Instruction] = field(default_factory=list)
+    predecessors: List['BasicBlock'] = field(default_factory=list)
+    successors: List['BasicBlock'] = field(default_factory=list)
+    
+    def add_instruction(self, instr: Instruction):
+        self.instructions.append(instr)
+    
+    def is_terminated(self) -> bool:
+        if not self.instructions:
+            return False
+        last = self.instructions[-1]
+        return last.type in [
+            InstructionType.JUMP,
+            InstructionType.JUMP_IF,
+            InstructionType.JUMP_IF_NOT,
+            InstructionType.RETURN
+        ]
+    
+    def get_terminator(self) -> Optional[Instruction]:
+        if self.is_terminated():
+            return self.instructions[-1]
+        return None
+
 
 @dataclass
 class IRFunction:
@@ -140,7 +166,7 @@ class IRFunction:
     name: str
     return_type: Type
     parameters: List[tuple] = field(default_factory=list)
-    basic_blocks: List['BasicBlock'] = field(default_factory=list)
+    basic_blocks: List[BasicBlock] = field(default_factory=list)  # ← теперь BasicBlock определён!
     local_vars: dict = field(default_factory=dict)
     temp_counter: int = 0
     label_counter: int = 0

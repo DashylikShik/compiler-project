@@ -1,0 +1,7 @@
+extern double pow(double x, double y);
+extern double sqrt(double x);
+fn main() -> int {
+    double x = pow(2.0, 3.0);
+    double y = sqrt(16.0);
+    return 0;
+}

@@ -29,7 +29,7 @@ class Parser:
     
     def peek(self) -> Token:
         if self.current >= len(self.tokens):
-            return self.tokens[-1]     # Возвращает токен, на котором мы стоим, НЕ съедая его.
+            return self.tokens[-1]
         return self.tokens[self.current]
     
     def previous(self) -> Token:
@@ -44,7 +44,7 @@ class Parser:
         return self.previous()
     
     def check(self, token_type: TokenType) -> bool:
-        if self.is_at_end():     # Использует peek(), чтобы спросить: "Следующее слово точно такое-то?"
+        if self.is_at_end():
             return False
         return self.peek().type == token_type
     
@@ -65,13 +65,14 @@ class Parser:
     def synchronize(self):
         self.advance()
         while not self.is_at_end():
-            if self.previous().type == TokenType.SEMICOLON: return
+            if self.previous().type == TokenType.SEMICOLON:
+                return
             if self.peek().type in [TokenType.KW_FN, TokenType.KW_STRUCT, 
                                     TokenType.KW_IF, TokenType.KW_WHILE, 
-                                    TokenType.KW_FOR, TokenType.KW_RETURN]:
+                                    TokenType.KW_FOR, TokenType.KW_RETURN,
+                                    TokenType.KW_EXTERN]:
                 return
             self.advance()
-    
     
     def parse(self) -> ProgramNode:
         declarations = []
@@ -88,6 +89,10 @@ class Parser:
         return ProgramNode(declarations, 1, 1)
 
     def declaration(self):
+        # Sprint 7: extern declarations
+        if self.match(TokenType.KW_EXTERN):
+            return self.extern_declaration()
+        
         if self.match(TokenType.KW_FN):
             return self.function_declaration()
         if self.match(TokenType.KW_STRUCT):
@@ -98,25 +103,68 @@ class Parser:
             
         return self.statement()
 
+    def extern_declaration(self) -> 'ExternFunctionNode':
+        """Parse extern function declaration: extern type name '(' parameters ')' ';'"""
+        extern_token = self.previous()
+        type_name = self.type_spec()
+        name_tok = self.consume(TokenType.IDENTIFIER, "Expect function name")
+        self.consume(TokenType.LPAREN, "Expect '(' after function name")
+        
+        params = []
+        is_variadic = False
+        
+        if not self.check(TokenType.RPAREN) and not self.check(TokenType.ELLIPSIS):
+            params = self.parameters()
+        
+        if self.match(TokenType.ELLIPSIS):
+            is_variadic = True
+        
+        self.consume(TokenType.RPAREN, "Expect ')' after parameters")
+        self.consume(TokenType.SEMICOLON, "Expect ';' after extern declaration")
+        
+        return ExternFunctionNode(name_tok.lexeme, type_name, params, is_variadic,
+                                   extern_token.line, extern_token.column)
+
     def check_type_start(self):
         if self.check(TokenType.KW_INT) or self.check(TokenType.KW_FLOAT) or \
            self.check(TokenType.KW_BOOL) or self.check(TokenType.KW_VOID):
             return True
         if self.check(TokenType.IDENTIFIER):
-            # Lookahead
             if self.current + 1 < len(self.tokens) and self.tokens[self.current+1].type == TokenType.IDENTIFIER:
                 return True
         return False
 
     def type_spec(self) -> str:
-        if self.match(TokenType.KW_INT): return "int"
-        if self.match(TokenType.KW_FLOAT): return "float"
-        if self.match(TokenType.KW_BOOL): return "bool"
-        if self.match(TokenType.KW_VOID): return "void"
-        if self.match(TokenType.IDENTIFIER): return self.previous().lexeme
+        """Parse type with optional pointer: type ('*')*"""
+        # Base type
+        if self.match(TokenType.KW_INT): 
+            type_name = "int"
+        elif self.match(TokenType.KW_FLOAT): 
+            type_name = "float"
+        elif self.match(TokenType.KW_BOOL): 
+            type_name = "bool"
+        elif self.match(TokenType.KW_VOID): 
+            type_name = "void"
+        elif self.match(TokenType.IDENTIFIER): 
+            type_name = self.previous().lexeme
+        else:
+            raise ParseError("Expect type specifier", self.peek())
         
-        raise ParseError("Expect type specifier", self.peek())
+        while self.match(TokenType.OP_MULT):
+            type_name = type_name + "*"
+        
+        return type_name
 
+    def parse_type(self):
+        """Parse type for arrays: type or type '[' expression ']'"""
+        type_name = self.type_spec()
+        
+        if self.match(TokenType.LBRACKET):
+            size = self.expression()
+            self.consume(TokenType.RBRACKET, "Expect ']'")
+            return ArrayTypeNode(type_name, size, self.previous().line, self.previous().column)
+        
+        return type_name
 
     def function_declaration(self) -> FunctionDeclNode:
         fn_token = self.previous()
@@ -149,27 +197,89 @@ class Parser:
         self.consume(TokenType.RBRACE, "Expect '}' after struct body")
         return StructDeclNode(name_tok.lexeme, fields, struct_token.line, struct_token.column)
 
-    def var_declaration(self) -> VarDeclStmtNode:
+    def var_declaration(self):
         type_name = self.type_spec()
         name_tok = self.consume(TokenType.IDENTIFIER, "Expect variable name")
         
+        # Check for array dimensions (support multi-dimensional)
+        dimensions = []
+        while self.match(TokenType.LBRACKET):
+            size = self.expression()
+            self.consume(TokenType.RBRACKET, "Expect ']'")
+            dimensions.append(size)
+        
         initializer = None
         if self.match(TokenType.OP_ASSIGN):
-            initializer = self.expression()
-            
+            if self.match(TokenType.LBRACE):
+                # Array initializer: {1, 2, 3}
+                initializer = []
+                if not self.check(TokenType.RBRACE):
+                    initializer.append(self.expression())
+                    while self.match(TokenType.COMMA):
+                        initializer.append(self.expression())
+                self.consume(TokenType.RBRACE, "Expect '}' after array initializer")
+            else:
+                initializer = self.expression()
+        
         self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
+        
+        if dimensions:
+            # For multi-dimensional, store as list of dimensions
+            return ArrayDeclNode(type_name, name_tok.lexeme, dimensions, initializer,
+                                name_tok.line, name_tok.column)
+        
         return VarDeclStmtNode(type_name, name_tok.lexeme, initializer, name_tok.line, name_tok.column)
 
     def parameters(self) -> List[ParamNode]:
+        """Parse function parameters with optional ..."""
         params = []
+        
+        # Check for variadic ...
+        if self.check(TokenType.ELLIPSIS):
+            return params
+        
         params.append(self.parameter())
         while self.match(TokenType.COMMA):
+            # Check for ... after comma
+            if self.check(TokenType.ELLIPSIS):
+                break
             params.append(self.parameter())
+        
         return params
 
+    def extern_declaration(self) -> 'ExternFunctionNode':
+        """Parse extern function declaration: extern type name '(' parameters ')' ';'"""
+        extern_token = self.previous()
+        return_type = self.type_spec()
+        name_tok = self.consume(TokenType.IDENTIFIER, "Expect function name")
+        self.consume(TokenType.LPAREN, "Expect '(' after function name")
+        
+        params = []
+        is_variadic = False
+        
+        # Parse parameters
+        if not self.check(TokenType.RPAREN):
+            params = self.parameters()
+        
+        # Check for variadic ...
+        if self.match(TokenType.ELLIPSIS):
+            is_variadic = True
+        
+        self.consume(TokenType.RPAREN, "Expect ')' after parameters")
+        self.consume(TokenType.SEMICOLON, "Expect ';' after extern declaration")
+        
+        return ExternFunctionNode(name_tok.lexeme, return_type, params, is_variadic,
+                                extern_token.line, extern_token.column)
+
     def parameter(self) -> ParamNode:
+        """Parse a single parameter"""
         type_name = self.type_spec()
         name_tok = self.consume(TokenType.IDENTIFIER, "Expect parameter name")
+        
+        # Array parameter: int arr[]
+        if self.match(TokenType.LBRACKET):
+            self.consume(TokenType.RBRACKET, "Expect ']' for array parameter")
+        
         return ParamNode(type_name, name_tok.lexeme, name_tok.line, name_tok.column)
 
     def statement(self) -> StatementNode:
@@ -178,14 +288,13 @@ class Parser:
         if self.match(TokenType.KW_WHILE): return self.while_statement()
         if self.match(TokenType.KW_FOR): return self.for_statement()
         if self.match(TokenType.KW_RETURN): return self.return_statement()
-        if self.match(TokenType.SEMICOLON): return None # Empty statement
+        if self.match(TokenType.SEMICOLON): return None
 
         return self.expression_statement()
 
     def block(self) -> BlockStmtNode:
-
         if self.previous().type != TokenType.LBRACE:
-             self.consume(TokenType.LBRACE, "Expect '{'")
+            self.consume(TokenType.LBRACE, "Expect '{'")
         
         stmts = []
         while not self.check(TokenType.RBRACE) and not self.is_at_end():
@@ -196,7 +305,7 @@ class Parser:
         return BlockStmtNode(stmts, self.previous().line, self.previous().column)
 
     def if_statement(self) -> IfStmtNode:
-        if_token = self.previous() # 'if'
+        if_token = self.previous()
         self.consume(TokenType.LPAREN, "Expect '(' after 'if'")
         condition = self.expression()
         self.consume(TokenType.RPAREN, "Expect ')' after if condition")
@@ -256,7 +365,6 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after expression")
         return ExprStmtNode(expr, expr.line, expr.column)
 
-
     def expression(self) -> ExpressionNode:
         return self.assignment()
 
@@ -266,9 +374,12 @@ class Parser:
         if self.match(TokenType.OP_ASSIGN, TokenType.OP_PLUS_ASSIGN, TokenType.OP_MINUS_ASSIGN, 
                       TokenType.OP_MULT_ASSIGN, TokenType.OP_DIV_ASSIGN):
             operator = self.previous()
-            value = self.assignment() 
+            value = self.assignment()
             
-            if isinstance(expr, IdentifierExprNode):
+            # Check for array access on left side
+            if isinstance(expr, ArrayAccessNode):
+                return ArrayAssignmentNode(expr.array, expr.index, operator, value, expr.line, expr.column)
+            elif isinstance(expr, IdentifierExprNode):
                 return AssignmentExprNode(expr, operator, value, expr.line, expr.column)
             else:
                 self.errors.append(str(ParseError("Invalid assignment target", operator)))
@@ -279,7 +390,7 @@ class Parser:
     def logical_or(self) -> ExpressionNode:
         expr = self.logical_and()
         while self.match(TokenType.OP_OR_OR):
-            operator = self.previous() 
+            operator = self.previous()
             right = self.logical_and()
             expr = BinaryExprNode(expr, operator, right, expr.line, expr.column)
         return expr
@@ -287,7 +398,7 @@ class Parser:
     def logical_and(self) -> ExpressionNode:
         expr = self.equality()
         while self.match(TokenType.OP_AND_AND):
-            operator = self.previous()  
+            operator = self.previous()
             right = self.equality()
             expr = BinaryExprNode(expr, operator, right, expr.line, expr.column)
         return expr
@@ -295,7 +406,7 @@ class Parser:
     def equality(self) -> ExpressionNode:
         expr = self.relational()
         while self.match(TokenType.OP_EQ, TokenType.OP_NEQ):
-            operator = self.previous() 
+            operator = self.previous()
             right = self.relational()
             expr = BinaryExprNode(expr, operator, right, expr.line, expr.column)
         return expr
@@ -303,7 +414,7 @@ class Parser:
     def relational(self) -> ExpressionNode:
         expr = self.additive()
         while self.match(TokenType.OP_LT, TokenType.OP_LTE, TokenType.OP_GT, TokenType.OP_GTE):
-            operator = self.previous() 
+            operator = self.previous()
             right = self.additive()
             expr = BinaryExprNode(expr, operator, right, expr.line, expr.column)
         return expr
@@ -311,7 +422,7 @@ class Parser:
     def additive(self) -> ExpressionNode:
         expr = self.multiplicative()
         while self.match(TokenType.OP_PLUS, TokenType.OP_MINUS):
-            operator = self.previous() 
+            operator = self.previous()
             right = self.multiplicative()
             expr = BinaryExprNode(expr, operator, right, expr.line, expr.column)
         return expr
@@ -344,6 +455,9 @@ class Parser:
             return LiteralExprNode(False, "bool", self.previous().line, self.previous().column)
         
         if self.match(TokenType.IDENTIFIER):
+            # Check for array access
+            if self.match(TokenType.LBRACKET):
+                return self.parse_array_access(IdentifierExprNode(self.previous().lexeme, self.previous().line, self.previous().column))
             if self.match(TokenType.LPAREN):
                 return self.finish_call()
             return IdentifierExprNode(self.previous().lexeme, self.previous().line, self.previous().column)
@@ -354,6 +468,20 @@ class Parser:
             return expr
 
         raise ParseError("Expect expression", self.peek())
+
+    def parse_array_access(self, array) -> ArrayAccessNode:
+        """Parse array access: arr[index] (supports multi-dimensional)"""
+        index = self.expression()
+        self.consume(TokenType.RBRACKET, "Expect ']'")
+        node = ArrayAccessNode(array, index, array.line, array.column)
+        
+        # Support multi-dimensional: arr[i][j]
+        while self.match(TokenType.LBRACKET):
+            index = self.expression()
+            self.consume(TokenType.RBRACKET, "Expect ']'")
+            node = ArrayAccessNode(node, index, node.line, node.column)
+        
+        return node
 
     def finish_call(self) -> CallExprNode:
         callee_id = self.tokens[self.current - 2]

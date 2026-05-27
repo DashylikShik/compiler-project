@@ -368,3 +368,113 @@ python tests\control_flow\test_golden.py
 
 # Второй запуск - сравнит с expected
 python tests\control_flow\test_golden.py
+
+
+# 1. Переход в папку проекта
+cd C:\Users\Пользователь\Desktop\compiler-project
+
+# 2. Запуск Visual Studio окружение (из папки проекта)
+"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+# 3. Теперь слинк
+link test_short.obj /entry:main /subsystem:console /out:test_short.exe
+
+# 4. Запуск программы
+test_short.exe
+
+# 5. код возврата
+echo %errorlevel%
+
+
+# 2. Компилируем в ассемблер
+python src/main.py compile test_arith.src --output test_arith.asm
+
+# 3. Ассемблируем
+nasm -f win64 test_arith.asm -o test_arith.obj
+
+# 4. Линкуем в exe
+link test_arith.obj /entry:main /subsystem:console /out:test_arith.exe
+
+# 5. Запускаем
+test_arith.exe
+
+# 6. Смотрим код возврата
+echo %errorlevel%
+
+# Тест 1: простое возвращение числа
+python -c "open('test_simple.src', 'w', encoding='utf-8').write('fn main() -> int { return 42; }')"
+python src/main.py compile test_simple.src --output test_simple.asm
+nasm -f win64 test_simple.asm -o test_simple.obj
+link test_simple.obj /entry:main /subsystem:console /out:test_simple.exe
+test_simple.exe
+echo %errorlevel%
+
+## Sprint 7:
+
+# TEST-1: Тесты массивов
+python -c "open('tests/array/valid/01_declaration.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5]; return 0; }')"
+python -c "open('tests/array/valid/02_initialized.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[3] = {1, 2, 3}; return arr[0]; }')"
+python -c "open('tests/array/valid/03_access.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5] = {1,2,3,4,5}; arr[2] = 10; return arr[2]; }')"
+python -c "open('tests/array/valid/04_multidim.src', 'w', encoding='utf-8').write('fn main() -> int { int matrix[3][4]; matrix[1][2] = 42; return matrix[1][2]; }')"
+python -c "open('tests/array/valid/05_param.src', 'w', encoding='utf-8').write('fn sum(int arr[], int size) -> int { int total = 0; for (int i = 0; i < size; i = i + 1) { total = total + arr[i]; } return total; }\nfn main() -> int { int arr[5] = {1,2,3,4,5}; return sum(arr, 5); }')"
+python -c "open('tests/array/invalid/01_out_of_bounds.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5]; arr[5] = 10; return 0; }')"
+
+echo "01_declaration:"
+python src/main.py check tests/array/valid/01_declaration.src
+
+echo "02_initialized:"
+python src/main.py check tests/array/valid/02_initialized.src
+
+echo "03_access:"
+python src/main.py check tests/array/valid/03_access.src
+
+echo "04_multidim:"
+python src/main.py check tests/array/valid/04_multidim.src
+
+echo "05_param:"
+python src/main.py check tests/array/valid/05_param.src
+
+# TEST-2: Тесты внешних вызовов
+python -c "open('tests/external/valid/01_printf.src', 'w', encoding='utf-8').write('extern int printf(char* format, ...);\nfn main() -> int { printf(\"Hello World!\\n\"); return 0; }')"
+python -c "open('tests/external/valid/02_malloc.src', 'w', encoding='utf-8').write('extern void* malloc(int size);\nextern void free(void* ptr);\nfn main() -> int { int* ptr = malloc(4); if (ptr != 0) { *ptr = 42; free(ptr); } return 0; }')"
+python -c "open('tests/external/valid/03_math.src', 'w', encoding='utf-8').write('extern double pow(double x, double y);\nextern double sqrt(double x);\nfn main() -> int { double x = pow(2.0, 3.0); double y = sqrt(16.0); return 0; }')"
+python -c "open('tests/external/valid/04_string.src', 'w', encoding='utf-8').write('extern int strlen(char* str);\nextern char* strcpy(char* dest, char* src);\nextern int strcmp(char* s1, char* s2);\nfn main() -> int { char str[20]; strcpy(str, \"hello\"); int len = strlen(str); return len; }')"
+python -c "open('tests/external/invalid/01_wrong_args.src', 'w', encoding='utf-8').write('extern int printf(char* format, ...);\nfn main() -> int { printf(); return 0; }')"
+
+echo "01_printf:"
+python src/main.py check tests/external/valid/01_printf.src
+
+echo "02_malloc:"
+python src/main.py check tests/external/valid/02_malloc.src
+
+echo "03_math:"
+python src/main.py check tests/external/valid/03_math.src
+
+echo "04_string:"
+python src/main.py check tests/external/valid/04_string.src
+
+# TEST-3: Тесты оптимизаций
+python -c "open('tests/optimization/valid/01_folding.src', 'w', encoding='utf-8').write('fn main() -> int { int x = 2 + 3; int y = 4 * 5; return x + y; }')"
+python -c "open('tests/optimization/valid/02_propagation.src', 'w', encoding='utf-8').write('fn main() -> int { int x = 5; int y = x; int z = y + 10; return z; }')"
+python -c "open('tests/optimization/valid/03_dce.src', 'w', encoding='utf-8').write('fn main() -> int { int x = 5; if (1 > 2) { return 10; } return x; }')"
+python -c "open('tests/optimization/valid/04_compare.src', 'w', encoding='utf-8').write('fn main() -> bool { return 5 > 3; }')"
+python -c "open('tests/optimization/valid/05_logic.src', 'w', encoding='utf-8').write('fn main() -> bool { bool x = true && false; bool y = true || false; return x; }')"
+python -c "open('tests/optimization/valid/06_mixed.src', 'w', encoding='utf-8').write('fn main() -> int { int a = 2 + 3; int b = a * 2; if (b > 10) { return 100; } else { return b; } }')"
+
+echo "01_folding:"
+python src/main.py compile tests/optimization/valid/01_folding.src --optimize --verbose
+
+echo "02_propagation:"
+python src/main.py compile tests/optimization/valid/02_propagation.src --optimize --verbose
+
+echo "03_dce:"
+python src/main.py compile tests/optimization/valid/03_dce.src --optimize --verbose
+
+echo "04_compare:"
+python src/main.py compile tests/optimization/valid/04_compare.src --optimize --verbose
+
+echo "05_logic:"
+python src/main.py compile tests/optimization/valid/05_logic.src --optimize --verbose
+
+echo "06_mixed:"
+python src/main.py compile tests/optimization/valid/06_mixed.src --optimize --verbose

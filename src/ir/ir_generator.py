@@ -165,7 +165,16 @@ class IRGenerator:
         return Operand.var(node.name)
     
     def visit_binary(self, node: BinaryExprNode) -> Operand:
-        """Generate IR for binary operation"""
+        """Generate IR for binary operation with short-circuit for logical ops"""
+        op = node.operator.lexeme
+        
+        # Short-circuit for && and ||
+        if op == '&&':
+            return self.visit_logical_and(node)
+        elif op == '||':
+            return self.visit_logical_or(node)
+        
+        # For arithmetic and comparison operators - normal evaluation
         left = self.visit_expression(node.left)
         right = self.visit_expression(node.right)
         result = self.current_function.new_temp()
@@ -182,14 +191,110 @@ class IRGenerator:
             '<=': InstructionType.CMP_LE,
             '>': InstructionType.CMP_GT,
             '>=': InstructionType.CMP_GE,
-            '&&': InstructionType.AND,
-            '||': InstructionType.OR,
         }
         
-        op = op_map.get(node.operator.lexeme, InstructionType.ADD)
+        inst_type = op_map.get(op, InstructionType.ADD)
         self.current_block.add_instruction(
-            Instruction(op, result, left, right)
+            Instruction(inst_type, result, left, right)
         )
+        return result
+
+    def visit_logical_and(self, node: BinaryExprNode) -> Operand:
+        """Generate short-circuit AND (&&)"""
+        result = self.current_function.new_temp()
+        false_label = self.current_function.new_label()
+        end_label = self.current_function.new_label()
+        
+        # Вычисляем левый операнд
+        left = self.visit_expression(node.left)
+        
+        # Если левый false -> прыжок на false_label
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP_IF_NOT, src1=left, src2=Operand.label(false_label))
+        )
+        
+        # Вычисляем правый операнд (только если левый true)
+        right = self.visit_expression(node.right)
+        
+        # Если правый false -> прыжок на false_label
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP_IF_NOT, src1=right, src2=Operand.label(false_label))
+        )
+        
+        # Результат true
+        self.current_block.add_instruction(
+            Instruction(InstructionType.MOVE, result, Operand.const(1))
+        )
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP, src1=Operand.label(end_label))
+        )
+        
+        # Результат false
+        false_block = BasicBlock(false_label)
+        self.current_function.basic_blocks.append(false_block)
+        self.current_block = false_block
+        self.current_block.add_instruction(
+            Instruction(InstructionType.MOVE, result, Operand.const(0))
+        )
+        
+        # Конец
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP, src1=Operand.label(end_label))
+        )
+        
+        end_block = BasicBlock(end_label)
+        self.current_function.basic_blocks.append(end_block)
+        self.current_block = end_block
+        
+        return result
+
+    def visit_logical_or(self, node: BinaryExprNode) -> Operand:
+        """Generate short-circuit OR (||)"""
+        result = self.current_function.new_temp()
+        true_label = self.current_function.new_label()
+        end_label = self.current_function.new_label()
+        
+        # Вычисляем левый операнд
+        left = self.visit_expression(node.left)
+        
+        # Если левый true -> прыжок на true_label
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP_IF, src1=left, src2=Operand.label(true_label))
+        )
+        
+        # Вычисляем правый операнд (только если левый false)
+        right = self.visit_expression(node.right)
+        
+        # Если правый true -> прыжок на true_label
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP_IF, src1=right, src2=Operand.label(true_label))
+        )
+        
+        # Результат false
+        self.current_block.add_instruction(
+            Instruction(InstructionType.MOVE, result, Operand.const(0))
+        )
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP, src1=Operand.label(end_label))
+        )
+        
+        # Результат true
+        true_block = BasicBlock(true_label)
+        self.current_function.basic_blocks.append(true_block)
+        self.current_block = true_block
+        self.current_block.add_instruction(
+            Instruction(InstructionType.MOVE, result, Operand.const(1))
+        )
+        
+        # Конец
+        self.current_block.add_instruction(
+            Instruction(InstructionType.JUMP, src1=Operand.label(end_label))
+        )
+        
+        end_block = BasicBlock(end_label)
+        self.current_function.basic_blocks.append(end_block)
+        self.current_block = end_block
+        
         return result
     
     def visit_unary(self, node: UnaryExprNode) -> Operand:

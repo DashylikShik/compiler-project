@@ -6,7 +6,8 @@ add:
     push rbp
     mov rbp, rsp
     sub rsp, 32
-    mov [rbp-16], [rbp-8]
+    mov eax, [rbp-8]
+    mov [rbp-16], eax
     mov eax, [rbp-8]
     add eax, [rbp-16]
     mov [rbp-24], eax

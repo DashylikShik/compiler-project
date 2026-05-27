@@ -1,0 +1,9 @@
+extern void* malloc(int size);
+extern void free(void* ptr);
+fn main() -> int {
+    void* ptr = malloc(4);
+    if (ptr != 0) {
+        free(ptr);
+    }
+    return 0;
+}
