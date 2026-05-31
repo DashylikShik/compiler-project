@@ -41,6 +41,8 @@ class IRGenerator:
         self.current_function: Optional[IRFunction] = None
         self.current_block: Optional[BasicBlock] = None
         self.var_to_temp: Dict[str, Operand] = {}
+        self.array_dimensions: Dict[str, List[int]] = {}
+        self.array_params = set()
     
     def generate(self, ast: ProgramNode) -> IRProgram:
         """Generate IR for entire program"""
@@ -65,21 +67,25 @@ class IRGenerator:
         
         self.current_function = ir_func
         self.var_to_temp.clear()
+        self.array_dimensions.clear()
+        self.array_params.clear()
         
         # Create entry block
         self.current_block = BasicBlock("entry")
         ir_func.basic_blocks.append(self.current_block)
         
-        # Store parameters as local variables
         for param in node.params:
-            temp = ir_func.new_temp()
-            self.var_to_temp[param.name] = temp
-            param_operand = Operand.var(param.name)
-            self.current_block.add_instruction(
-                Instruction(InstructionType.MOVE, temp, param_operand)
-            )
-        
-        # Generate code for body
+            if "[]" in param.type_name or param.type_name.endswith("*"):
+                self.array_params.add(param.name)
+                # Использовать var напрямую, не temp
+                self.var_to_temp[param.name] = Operand.var(param.name)
+            else:
+                temp = ir_func.new_temp()
+                self.var_to_temp[param.name] = temp
+                self.current_block.add_instruction(
+                    Instruction(InstructionType.MOVE, temp, Operand.var(param.name))
+                )
+                # Generate code for body
         if node.body:
             self.visit_block(node.body)
         
@@ -105,7 +111,9 @@ class IRGenerator:
     
     def visit_statement(self, node: StatementNode):
         """Generate IR for a statement"""
-        if isinstance(node, VarDeclStmtNode):
+        if isinstance(node, ArrayDeclNode):
+            self.visit_array_decl(node)
+        elif isinstance(node, VarDeclStmtNode):
             self.visit_var_decl(node)
         elif isinstance(node, ExprStmtNode):
             self.visit_expression(node.expression)
@@ -132,6 +140,174 @@ class IRGenerator:
                     Instruction(InstructionType.MOVE, temp, init_temp)
                 )
     
+
+    def _const_int_value(self, expr, default: int = 1) -> int:
+        """Extract integer value from a constant AST/IR expression where possible."""
+        if isinstance(expr, LiteralExprNode):
+            try:
+                return int(expr.value)
+            except Exception:
+                return default
+        if isinstance(expr, Operand) and expr.operand_type == "const":
+            try:
+                return int(expr.value)
+            except Exception:
+                return default
+        return default
+
+    def _array_total_count(self, dimensions) -> int:
+        total = 1
+        dims = dimensions if isinstance(dimensions, list) else [dimensions]
+        for d in dims:
+            total *= self._const_int_value(d, 1)
+        return max(total, 1)
+
+    def visit_array_decl(self, node: ArrayDeclNode):
+        """Generate heap allocation for a local array.
+
+        Sprint 7 rule: arrays are not allocated by ALLOCA/stack storage.  A local
+        array variable is a pointer temporary; storage is malloc(count * sizeof(T)).
+        """
+        ptr = self.current_function.new_temp()
+        self.var_to_temp[node.name] = ptr
+
+        dimensions = getattr(node, 'size', 1)
+        dims = dimensions if isinstance(dimensions, list) else [dimensions]
+        dim_values = [self._const_int_value(d, 1) for d in dims]
+
+        self.array_dimensions[node.name] = dim_values
+
+        count = 1
+        for d in dim_values:
+            count *= d
+        element_size = 4  # int/float are 4 bytes in this compiler
+        total_bytes = count * element_size
+
+        # malloc(total_bytes), result pointer in ptr
+        self.current_block.add_instruction(
+            Instruction(InstructionType.PARAM, src1=Operand.const(0), src2=Operand.const(total_bytes))
+        )
+        self.current_block.add_instruction(
+            Instruction(InstructionType.CALL, ptr, src1=Operand.var('malloc'), args=[Operand.const(total_bytes)])
+        )
+
+        # Optional initializer: int a[3] = {1, 2, 3};
+        initializer = getattr(node, 'initializer', None)
+        if isinstance(initializer, list):
+            for i, value_expr in enumerate(initializer):
+                value = self.visit_expression(value_expr)
+                self.current_block.add_instruction(
+                    Instruction(InstructionType.ARRAY_STORE, dest=ptr, src1=Operand.const(i), src2=value)
+                )
+
+    def _array_base_name(self, node):
+        if isinstance(node, IdentifierExprNode):
+            return node.name
+        if isinstance(node, ArrayAccessNode):
+            return self._array_base_name(node.array)
+        return None
+
+    def _flatten_array_access(self, node: ArrayAccessNode):
+        indices = []
+        cur = node
+
+        while isinstance(cur, ArrayAccessNode):
+            indices.append(cur.index)
+            cur = cur.array
+
+        indices.reverse()
+
+        if not isinstance(cur, IdentifierExprNode):
+            return None, None, None
+
+        name = cur.name
+        base = self.visit_identifier(cur)
+        dims = self.array_dimensions.get(name)
+
+        # arr[] parameter: это уже указатель, работаем как с 1D массивом
+        if name in self.array_params:
+            # base = Operand.var(name) → x86 возьмёт rdi/rsi напрямую
+            index = self.visit_expression(indices[0])
+            return Operand.var(name), index, name
+
+        if not dims or len(indices) <= 1:
+            index = self.visit_expression(indices[0])
+            return base, index, name
+
+        flat = None
+
+        for i, idx_expr in enumerate(indices):
+            idx = self.visit_expression(idx_expr)
+
+            multiplier = 1
+            for d in dims[i + 1:]:
+                multiplier *= d
+
+            if multiplier != 1:
+                mul_temp = self.current_function.new_temp()
+                self.current_block.add_instruction(
+                    Instruction(
+                        InstructionType.MUL,
+                        mul_temp,
+                        idx,
+                        Operand.const(multiplier)
+                    )
+                )
+                term = mul_temp
+            else:
+                term = idx
+
+            if flat is None:
+                flat = term
+            else:
+                add_temp = self.current_function.new_temp()
+                self.current_block.add_instruction(
+                    Instruction(
+                        InstructionType.ADD,
+                        add_temp,
+                        flat,
+                        term
+                    )
+                )
+                flat = add_temp
+
+        return base, flat, name
+
+    def visit_array_access(self, node: ArrayAccessNode) -> Operand:
+        base, index, _name = self._flatten_array_access(node)
+
+        if base is None:
+            base = self.visit_expression(node.array)
+            index = self.visit_expression(node.index)
+
+        result = self.current_function.new_temp()
+        self.current_block.add_instruction(
+            Instruction(InstructionType.ARRAY_LOAD, result, base, index)
+        )
+        return result
+
+    def visit_array_assignment(self, node: ArrayAssignmentNode) -> Operand:
+        fake_access = ArrayAccessNode(
+            node.array,
+            node.index,
+            node.line,
+            node.column
+        )
+
+        base, index, _name = self._flatten_array_access(fake_access)
+
+        if base is None:
+            base = self.visit_expression(node.array)
+            index = self.visit_expression(node.index)
+
+        value = self.visit_expression(node.value)
+
+        self.current_block.add_instruction(
+            Instruction(InstructionType.ARRAY_STORE, dest=base, src1=index, src2=value)
+        )
+
+        return value
+
     def visit_expression(self, node: ExpressionNode) -> Optional[Operand]:
         """Generate IR for expression and return result operand"""
         if isinstance(node, LiteralExprNode):
@@ -146,6 +322,10 @@ class IRGenerator:
             return self.visit_call(node)
         elif isinstance(node, AssignmentExprNode):
             return self.visit_assignment(node)
+        elif isinstance(node, ArrayAccessNode):
+            return self.visit_array_access(node)
+        elif isinstance(node, ArrayAssignmentNode):
+            return self.visit_array_assignment(node)
         return None
     
     def visit_literal(self, node: LiteralExprNode) -> Operand:
@@ -155,7 +335,7 @@ class IRGenerator:
         elif node.literal_type == "float":
             return Operand.const(float(node.value))
         elif node.literal_type == "bool":
-            return Operand.const(bool(node.value))
+            return Operand.const(1 if node.value else 0)
         return Operand.const(node.value)
     
     def visit_identifier(self, node: IdentifierExprNode) -> Operand:

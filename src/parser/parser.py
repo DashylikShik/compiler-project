@@ -126,33 +126,33 @@ class Parser:
                                    extern_token.line, extern_token.column)
 
     def check_type_start(self):
-        if self.check(TokenType.KW_INT) or self.check(TokenType.KW_FLOAT) or \
-           self.check(TokenType.KW_BOOL) or self.check(TokenType.KW_VOID):
+        if self.check(TokenType.KW_INT) or self.check(TokenType.KW_FLOAT) \
+        or self.check(TokenType.KW_BOOL) or self.check(TokenType.KW_VOID):
             return True
         if self.check(TokenType.IDENTIFIER):
-            if self.current + 1 < len(self.tokens) and self.tokens[self.current+1].type == TokenType.IDENTIFIER:
-                return True
+            if self.current + 1 < len(self.tokens):
+                next_type = self.tokens[self.current + 1].type
+                if next_type in (TokenType.OP_MULT, TokenType.IDENTIFIER):
+                    return True
         return False
-
-    def type_spec(self) -> str:
-        """Parse type with optional pointer: type ('*')*"""
-        # Base type
-        if self.match(TokenType.KW_INT): 
+    
+    def type_spec(self):
+        if self.match(TokenType.KW_INT):
             type_name = "int"
-        elif self.match(TokenType.KW_FLOAT): 
+        elif self.match(TokenType.KW_FLOAT):
             type_name = "float"
-        elif self.match(TokenType.KW_BOOL): 
+        elif self.match(TokenType.KW_BOOL):
             type_name = "bool"
-        elif self.match(TokenType.KW_VOID): 
+        elif self.match(TokenType.KW_VOID):
             type_name = "void"
-        elif self.match(TokenType.IDENTIFIER): 
+        elif self.match(TokenType.IDENTIFIER):
             type_name = self.previous().lexeme
         else:
             raise ParseError("Expect type specifier", self.peek())
-        
+
         while self.match(TokenType.OP_MULT):
-            type_name = type_name + "*"
-        
+            type_name += "*"
+
         return type_name
 
     def parse_type(self):
@@ -199,36 +199,50 @@ class Parser:
 
     def var_declaration(self):
         type_name = self.type_spec()
-        name_tok = self.consume(TokenType.IDENTIFIER, "Expect variable name")
-        
-        # Check for array dimensions (support multi-dimensional)
-        dimensions = []
-        while self.match(TokenType.LBRACKET):
-            size = self.expression()
-            self.consume(TokenType.RBRACKET, "Expect ']'")
-            dimensions.append(size)
-        
-        initializer = None
-        if self.match(TokenType.OP_ASSIGN):
-            if self.match(TokenType.LBRACE):
-                # Array initializer: {1, 2, 3}
-                initializer = []
-                if not self.check(TokenType.RBRACE):
-                    initializer.append(self.expression())
-                    while self.match(TokenType.COMMA):
+        declarations = []
+
+        while True:
+            name_tok = self.consume(TokenType.IDENTIFIER, "Expect variable name")
+
+            # Массивные размеры
+            dimensions = []
+            while self.match(TokenType.LBRACKET):
+                size = self.expression()
+                self.consume(TokenType.RBRACKET, "Expect ']' after array size")
+                dimensions.append(size)
+
+            # Инициализация
+            initializer = None
+            if self.match(TokenType.OP_ASSIGN):
+                if self.match(TokenType.LBRACE):
+                    initializer = []
+                    if not self.check(TokenType.RBRACE):
                         initializer.append(self.expression())
-                self.consume(TokenType.RBRACE, "Expect '}' after array initializer")
-            else:
-                initializer = self.expression()
-        
-        self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
-        
-        if dimensions:
-            # For multi-dimensional, store as list of dimensions
-            return ArrayDeclNode(type_name, name_tok.lexeme, dimensions, initializer,
+                        while self.match(TokenType.COMMA):
+                            initializer.append(self.expression())
+                    self.consume(TokenType.RBRACE, "Expect '}' after array initializer")
+                else:
+                    initializer = self.expression()
+
+            if dimensions:
+                declarations.append(
+                    ArrayDeclNode(type_name, name_tok.lexeme, dimensions, initializer,
                                 name_tok.line, name_tok.column)
-        
-        return VarDeclStmtNode(type_name, name_tok.lexeme, initializer, name_tok.line, name_tok.column)
+                )
+            else:
+                declarations.append(
+                    VarDeclStmtNode(type_name, name_tok.lexeme, initializer,
+                                    name_tok.line, name_tok.column)
+                )
+
+            if not self.match(TokenType.COMMA):
+                break
+
+        self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
+
+        if len(declarations) == 1:
+            return declarations[0]
+        return BlockStmtNode(declarations, declarations[0].line, declarations[0].column)
 
     def parameters(self) -> List[ParamNode]:
         """Parse function parameters with optional ..."""
@@ -272,14 +286,14 @@ class Parser:
                                 extern_token.line, extern_token.column)
 
     def parameter(self) -> ParamNode:
-        """Parse a single parameter"""
         type_name = self.type_spec()
+
         name_tok = self.consume(TokenType.IDENTIFIER, "Expect parameter name")
-        
-        # Array parameter: int arr[]
+
         if self.match(TokenType.LBRACKET):
             self.consume(TokenType.RBRACKET, "Expect ']' for array parameter")
-        
+            type_name += "*"
+
         return ParamNode(type_name, name_tok.lexeme, name_tok.line, name_tok.column)
 
     def statement(self) -> StatementNode:
@@ -445,29 +459,39 @@ class Parser:
     def primary(self) -> ExpressionNode:
         if self.match(TokenType.INT_LITERAL):
             return LiteralExprNode(self.previous().literal_value, "int", self.previous().line, self.previous().column)
+
         if self.match(TokenType.FLOAT_LITERAL):
             return LiteralExprNode(self.previous().literal_value, "float", self.previous().line, self.previous().column)
+
         if self.match(TokenType.STRING_LITERAL):
             return LiteralExprNode(self.previous().literal_value, "string", self.previous().line, self.previous().column)
+
         if self.match(TokenType.KW_TRUE):
             return LiteralExprNode(True, "bool", self.previous().line, self.previous().column)
+
         if self.match(TokenType.KW_FALSE):
             return LiteralExprNode(False, "bool", self.previous().line, self.previous().column)
-        
+
         if self.match(TokenType.IDENTIFIER):
-            # Check for array access
-            if self.match(TokenType.LBRACKET):
-                return self.parse_array_access(IdentifierExprNode(self.previous().lexeme, self.previous().line, self.previous().column))
+            ident = self.previous()
+            node = IdentifierExprNode(ident.lexeme, ident.line, ident.column)
+
             if self.match(TokenType.LPAREN):
-                return self.finish_call()
-            return IdentifierExprNode(self.previous().lexeme, self.previous().line, self.previous().column)
-            
+                return self.finish_call(node)
+
+            if self.match(TokenType.LBRACKET):
+                return self.parse_array_access(node)
+
+            return node
+
         if self.match(TokenType.LPAREN):
             expr = self.expression()
             self.consume(TokenType.RPAREN, "Expect ')' after expression")
             return expr
 
         raise ParseError("Expect expression", self.peek())
+        
+
 
     def parse_array_access(self, array) -> ArrayAccessNode:
         """Parse array access: arr[index] (supports multi-dimensional)"""
@@ -483,18 +507,22 @@ class Parser:
         
         return node
 
-    def finish_call(self) -> CallExprNode:
-        callee_id = self.tokens[self.current - 2]
-        callee_node = IdentifierExprNode(callee_id.lexeme, callee_id.line, callee_id.column)
-        
+    def finish_call(self, callee_node) -> CallExprNode:
         arguments = []
+
         if not self.check(TokenType.RPAREN):
             arguments.append(self.expression())
             while self.match(TokenType.COMMA):
                 arguments.append(self.expression())
-        
+
         self.consume(TokenType.RPAREN, "Expect ')' after arguments")
-        return CallExprNode(callee_node, arguments, callee_id.line, callee_id.column)
+
+        return CallExprNode(
+            callee_node,
+            arguments,
+            callee_node.line,
+            callee_node.column
+        )
 
     def get_errors(self) -> List[str]:
         return self.errors

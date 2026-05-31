@@ -1,5 +1,2 @@
 extern int printf(char* format, ...);
-fn main() -> int {
-    printf("Hello World!\n");
-    return 0;
-}
+fn main() -> int { printf("Hello World!\n"); return 0; }

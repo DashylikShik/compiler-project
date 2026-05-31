@@ -6,6 +6,8 @@ from .abi import ABI
 from .stack_frame import StackFrame
 from .label_manager import LabelManager
 from .control_flow_generator import ControlFlowGenerator
+from .external.external_calls import ExternalCallGenerator
+from .array.array_generator import ArrayGenerator
 
 
 class X86Generator:
@@ -26,10 +28,21 @@ class X86Generator:
         self.label_manager = LabelManager()
         self.cf_generator = None
         self.current_block_instrs = []  # временное хранилище для инструкций блока
+        self.extern_declared = set()
+        self.string_literals = {}
+        self.string_counter = 0
+        self.external = ExternalCallGenerator(self.sections)
+        self.array_gen = ArrayGenerator(self.sections)
     
     def generate(self, program: IRProgram) -> str:
         """Generate assembly for entire IR program"""
         self.sections['text'] = []
+        self.sections['rodata'] = []
+        self.extern_declared = set()
+        self.string_literals = {}
+        self.string_counter = 0
+        self.external = ExternalCallGenerator(self.sections)
+        self.array_gen = ArrayGenerator(self.sections)
         
         self.sections['text'].append("section .text")
         self.sections['text'].append("global main")
@@ -141,17 +154,78 @@ class X86Generator:
             self.gen_cmp_lt(instr)
         elif instr.type == InstructionType.CMP_GT:
             self.gen_cmp_gt(instr)
+        elif instr.type == InstructionType.CMP_NE:
+            self.gen_cmp_ne(instr)
+        elif instr.type == InstructionType.CMP_LE:
+            self.gen_cmp_le(instr)
+        elif instr.type == InstructionType.CMP_GE:
+            self.gen_cmp_ge(instr)
+        elif instr.type == InstructionType.ARRAY_LOAD:
+            self.gen_array_load(instr)
+        elif instr.type == InstructionType.ARRAY_STORE:
+            self.gen_array_store(instr)
     
+    def declare_extern_once(self, name: str):
+        if name not in self.extern_declared:
+            insert_at = 1 if self.sections['text'] and self.sections['text'][0].startswith('section') else 0
+            self.sections['text'].insert(insert_at, f"extern {name}")
+            self.extern_declared.add(name)
+
+    def get_string_label(self, value: str) -> str:
+        value = value.replace('\\n', '\n').replace('\\t', '\t').replace('\\0', '\0')
+        if value not in self.string_literals:
+            self.string_counter += 1
+            label = f"LC{self.string_counter}"
+            self.string_literals[value] = label
+            if not self.sections['rodata']:
+                self.sections['rodata'].append("section .rodata")
+            escaped = []
+            for ch in value:
+                if ch == '\\n':
+                    escaped.append('10')
+                elif ch == '\\t':
+                    escaped.append('9')
+                else:
+                    escaped.append(str(ord(ch)))
+            escaped.append('0')
+            self.sections['rodata'].append(f"{label}: db {', '.join(escaped)}")
+        return self.string_literals[value]
+
+    def is_memory(self, asm: str) -> bool:
+        return isinstance(asm, str) and asm.startswith('[')
+    
+    def needs_call_alignment_padding(self) -> bool:
+        # next_offset начинается с -8 и уменьшается на 8 за каждый temp.
+        # Размер локального фрейма примерно abs(next_offset + 8).
+        local_size = abs(self.next_offset + 8)
+
+        # После push rbp стек смещён на 8.
+        # Перед call надо, чтобы rsp был кратен 16.
+        return local_size % 16 == 0
+
     def get_operand(self, op: Operand) -> str:
-        """Convert IR operand to assembly string"""
+        """Convert IR operand to assembly string.
+
+        Temps are 8-byte stack slots, so pointer values from malloc are always
+        stored/loaded as RAX-width values, not truncated to EAX.
+        """
         if op is None:
             return "0"
-        
+
         if op.operand_type == "const":
-            return str(op.value)
+            if isinstance(op.value, str):
+                return f"rel {self.get_string_label(op.value)}"
+            return str(int(op.value)) if isinstance(op.value, bool) else str(op.value)
         elif op.operand_type == "label":
             return op.value
         elif op.operand_type == "var":
+            # Function parameters initially live in ABI registers.
+            if self.current_function:
+                for idx, (pname, _ptype) in enumerate(self.current_function.parameters):
+                    if pname == op.value:
+                        regs = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
+                        if idx < len(regs):
+                            return regs[idx]
             offset = self.stack_frame.get_local_offset(op.value) if self.stack_frame else None
             if offset is not None:
                 return f"[rbp{offset:+d}]"
@@ -162,9 +236,9 @@ class X86Generator:
                 offset = self.temp_offset[name]
                 return f"[rbp{offset:+d}]"
             return name
-        
+
         return str(op)
-    
+
     def gen_add(self, instr: Instruction):
         """Generate ADD instruction"""
         src1 = self.get_operand(instr.src1)
@@ -224,8 +298,11 @@ class X86Generator:
         """Generate RETURN instruction"""
         if instr.src1:
             src = self.get_operand(instr.src1)
-            self.sections['text'].append(f"    mov rax, {src}")
-        
+            if self.is_memory(src):
+                self.sections['text'].append(f"    mov eax, dword {src}")
+            else:
+                self.sections['text'].append(f"    mov eax, {src}")
+
         for line in self.stack_frame.get_epilogue():
             self.sections['text'].append(line)
     
@@ -235,19 +312,19 @@ class X86Generator:
         self.sections['text'].append(f"    jmp {target}")
     
     def gen_jump_if(self, instr: Instruction):
-        """Generate conditional JUMP_IF (jump if not zero)"""
         cond = self.get_operand(instr.src1)
         target = instr.src2.value
-        
-        self.sections['text'].append(f"    cmp {cond}, 0")
+
+        self.sections['text'].append(f"    mov eax, {cond}")
+        self.sections['text'].append("    cmp eax, 0")
         self.sections['text'].append(f"    jne {target}")
     
     def gen_jump_if_not(self, instr: Instruction):
-        """Generate conditional JUMP_IF_NOT (jump if zero)"""
         cond = self.get_operand(instr.src1)
         target = instr.src2.value
-        
-        self.sections['text'].append(f"    cmp {cond}, 0")
+
+        self.sections['text'].append(f"    mov eax, {cond}")
+        self.sections['text'].append("    cmp eax, 0")
         self.sections['text'].append(f"    je {target}")
     
     def gen_label(self, instr: Instruction):
@@ -366,40 +443,88 @@ class X86Generator:
         self.sections['text'].append(f"    movzx eax, al")
         self.sections['text'].append(f"    mov {dest}, eax")
     
+    def gen_cmp_ne(self, instr: Instruction):
+        left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append("    setne al")
+        self.sections['text'].append("    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+
+    def gen_cmp_le(self, instr: Instruction):
+        left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append("    setle al")
+        self.sections['text'].append("    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+
+    def gen_cmp_ge(self, instr: Instruction):
+        left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
+        self.sections['text'].append(f"    mov eax, {left}")
+        self.sections['text'].append(f"    cmp eax, {right}")
+        self.sections['text'].append("    setge al")
+        self.sections['text'].append("    movzx eax, al")
+        self.sections['text'].append(f"    mov {dest}, eax")
+
+    def gen_array_load(self, instr: Instruction):
+        base = self.get_operand(instr.src1)
+        index = self.get_operand(instr.src2)
+        dest = self.get_operand(instr.dest)
+        self.sections['text'].append(f"    mov r10, {base}")
+        self.sections['text'].append(f"    movsxd r11, dword {index}" if self.is_memory(index) else f"    mov r11, {index}")
+        self.sections['text'].append("    shl r11, 2")
+        self.sections['text'].append("    add r10, r11")
+        self.sections['text'].append("    mov eax, dword [r10]")
+        self.sections['text'].append(f"    mov {dest}, rax")
+
+    def gen_array_store(self, instr: Instruction):
+        base = self.get_operand(instr.dest)
+        index = self.get_operand(instr.src1)
+        value = self.get_operand(instr.src2)
+        self.sections['text'].append(f"    mov r10, {base}")
+        self.sections['text'].append(f"    movsxd r11, dword {index}" if self.is_memory(index) else f"    mov r11, {index}")
+        self.sections['text'].append("    shl r11, 2")
+        self.sections['text'].append("    add r10, r11")
+        self.sections['text'].append(f"    mov eax, {value}")
+        self.sections['text'].append("    mov dword [r10], eax")
+
     def gen_call(self, instr: Instruction):
-        """Generate CALL instruction with ABI support for extern functions"""
+        """Generate CALL instruction with System V ABI support."""
         func_name = instr.src1.value
-        
-        # Check if this is an extern function (printf, malloc, etc.)
-        extern_funcs = ['printf', 'scanf', 'malloc', 'free', 'puts', 'getchar',
-                        'memcpy', 'memset', 'pow', 'sqrt', 'sin', 'cos',
-                        'strlen', 'strcpy', 'strcmp']
-        
+
+        extern_funcs = {
+            'printf', 'scanf', 'malloc', 'free', 'puts', 'getchar',
+            'memcpy', 'memset', 'pow', 'sqrt', 'sin', 'cos',
+            'strlen', 'strcpy', 'strcmp'
+        }
+
         if func_name in extern_funcs:
-            self.sections['text'].append(f"    extern {func_name}")
-            
-            # For variadic functions (printf, scanf) - set AL=0
-            if func_name in ['printf', 'scanf']:
-                self.sections['text'].append("    xor eax, eax")
-        
+            self.declare_extern_once(func_name)
+
+        if func_name in {'printf', 'scanf'}:
+            self.sections['text'].append("    xor eax, eax")
+
         self.sections['text'].append(f"    call {func_name}")
-        
+
         if instr.dest:
             dest = self.get_operand(instr.dest)
-            self.sections['text'].append(f"    mov {dest}, eax")
-    
+            self.sections['text'].append(f"    mov {dest}, rax")
+
     def gen_param(self, instr: Instruction):
-        """Generate PARAM instruction"""
+        """Generate PARAM instruction. Integer and pointer args use 64-bit ABI regs."""
         index = int(instr.src1.value) if instr.src1 else 0
         value = self.get_operand(instr.src2)
-        
-        registers_32 = ['edi', 'esi', 'edx', 'ecx', 'r8d', 'r9d']
-        
-        if index < len(registers_32):
-            self.sections['text'].append(f"    mov {registers_32[index]}, {value}")
+        regs = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
+        if index < len(regs):
+            reg = regs[index]
+            if isinstance(value, str) and value.startswith('rel '):
+                self.sections['text'].append(f"    lea {reg}, [{value}]")
+            else:
+                self.sections['text'].append(f"    mov {reg}, {value}")
         else:
             self.sections['text'].append(f"    push {value}")
-    
+
     def gen_malloc(self, size: str) -> str:
         """Generate call to malloc"""
         self.sections['text'].append("    extern malloc")

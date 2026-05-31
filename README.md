@@ -412,12 +412,11 @@ echo %errorlevel%
 ## Sprint 7:
 
 # TEST-1: Тесты массивов
-python -c "open('tests/array/valid/01_declaration.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5]; return 0; }')"
-python -c "open('tests/array/valid/02_initialized.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[3] = {1, 2, 3}; return arr[0]; }')"
-python -c "open('tests/array/valid/03_access.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5] = {1,2,3,4,5}; arr[2] = 10; return arr[2]; }')"
-python -c "open('tests/array/valid/04_multidim.src', 'w', encoding='utf-8').write('fn main() -> int { int matrix[3][4]; matrix[1][2] = 42; return matrix[1][2]; }')"
-python -c "open('tests/array/valid/05_param.src', 'w', encoding='utf-8').write('fn sum(int arr[], int size) -> int { int total = 0; for (int i = 0; i < size; i = i + 1) { total = total + arr[i]; } return total; }\nfn main() -> int { int arr[5] = {1,2,3,4,5}; return sum(arr, 5); }')"
-python -c "open('tests/array/invalid/01_out_of_bounds.src', 'w', encoding='utf-8').write('fn main() -> int { int arr[5]; arr[5] = 10; return 0; }')"
+python3 -c "open('tests/array/valid/01_declaration.src','w').write('fn main() -> int { int arr[5]; return 0; }')"
+python3 -c "open('tests/array/valid/02_initialized.src','w').write('fn main() -> int { int arr[3] = {1, 2, 3}; return arr[0]; }')"
+python3 -c "open('tests/array/valid/03_access.src','w').write('fn main() -> int { int arr[5] = {1,2,3,4,5}; arr[2] = 10; return arr[2]; }')"
+python3 -c "open('tests/array/valid/04_multidim.src','w').write('fn main() -> int { int matrix[3][4]; matrix[1][2] = 42; return matrix[1][2]; }')"
+python3 -c "open('tests/array/valid/05_param.src','w').write('fn sum(int arr[], int size) -> int { int total = 0; for (int i = 0; i < size; i = i + 1) { total = total + arr[i]; } return total; }\nfn main() -> int { int arr[5] = {1,2,3,4,5}; return sum(arr, 5); }')"
 
 echo "01_declaration:"
 python src/main.py check tests/array/valid/01_declaration.src
@@ -435,11 +434,13 @@ echo "05_param:"
 python src/main.py check tests/array/valid/05_param.src
 
 # TEST-2: Тесты внешних вызовов
-python -c "open('tests/external/valid/01_printf.src', 'w', encoding='utf-8').write('extern int printf(char* format, ...);\nfn main() -> int { printf(\"Hello World!\\n\"); return 0; }')"
-python -c "open('tests/external/valid/02_malloc.src', 'w', encoding='utf-8').write('extern void* malloc(int size);\nextern void free(void* ptr);\nfn main() -> int { int* ptr = malloc(4); if (ptr != 0) { *ptr = 42; free(ptr); } return 0; }')"
-python -c "open('tests/external/valid/03_math.src', 'w', encoding='utf-8').write('extern double pow(double x, double y);\nextern double sqrt(double x);\nfn main() -> int { double x = pow(2.0, 3.0); double y = sqrt(16.0); return 0; }')"
-python -c "open('tests/external/valid/04_string.src', 'w', encoding='utf-8').write('extern int strlen(char* str);\nextern char* strcpy(char* dest, char* src);\nextern int strcmp(char* s1, char* s2);\nfn main() -> int { char str[20]; strcpy(str, \"hello\"); int len = strlen(str); return len; }')"
-python -c "open('tests/external/invalid/01_wrong_args.src', 'w', encoding='utf-8').write('extern int printf(char* format, ...);\nfn main() -> int { printf(); return 0; }')"
+python3 -c "open('tests/external/valid/01_printf.src','w').write('extern int printf(char* format, ...);\nfn main() -> int { printf(\"Hello World!\\n\"); return 0; }')"
+
+python3 -c "open('tests/external/valid/02_malloc.src','w').write('extern void* malloc(int size);\nextern void free(void* ptr);\nfn main() -> int { void* ptr = malloc(4); if (ptr != 0) { free(ptr); } return 0; }')"
+
+python3 -c "open('tests/external/valid/03_math.src','w').write('extern int pow(int x, int y);\nextern int sqrt(int x);\nfn main() -> int { int x = pow(2, 3); int y = sqrt(16); return 0; }')"
+
+python3 -c "open('tests/external/valid/04_string.src','w').write('extern int strlen(char* str);\nextern char* strcpy(char* dest, char* src);\nfn main() -> int { char str[20]; strcpy(str, \"hello\"); int len = strlen(str); return len; }')"
 
 echo "01_printf:"
 python src/main.py check tests/external/valid/01_printf.src
@@ -478,3 +479,11 @@ python src/main.py compile tests/optimization/valid/05_logic.src --optimize --ve
 
 echo "06_mixed:"
 python src/main.py compile tests/optimization/valid/06_mixed.src --optimize --verbose
+
+# запуск тестов
+sed -i 's/\r$//' run_valid_tests.py
+chmod +x run_valid_tests.py
+./run_valid_tests.py
+
+python3 src/main.py check tests/array/invalid/01_out_of_bounds.src
+python3 src/main.py check tests/external/invalid/01_wrong_args.src

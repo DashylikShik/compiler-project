@@ -1,7 +1,1 @@
-fn main() -> int {
-    int x = 5;
-    if (1 > 2) {
-        return 10;
-    }
-    return x;
-}
+fn main() -> int { int x = 5; if (1 > 2) { return 10; } return x; }

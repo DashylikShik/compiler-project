@@ -1,5 +1,1 @@
-fn main() -> bool {
-    bool x = true && false;
-    bool y = true || false;
-    return x;
-}
+fn main() -> bool { bool x = true && false; bool y = true || false; return x; }

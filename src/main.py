@@ -450,33 +450,17 @@ def run_compilation(args):
     # Оптимизации (Sprint 7)
     if optimize:
         try:
-            from ir.optimizer.constant_folding import ConstantFolding
-            from ir.optimizer.constant_propagation import ConstantPropagation
-            from ir.optimizer.dead_code import DeadCodeElimination
+            from ir.optimizer.pipeline import OptimizationPipeline
             
             if verbose:
                 print("\n Применение оптимизаций...")
             
-            # Порядок важен!
-            folding = ConstantFolding()
-            folding.optimize(ir_program)
-            
-            propagation = ConstantPropagation()
-            propagation.optimize(ir_program)
-            
-            dce = DeadCodeElimination()
-            dce.optimize(ir_program)
+            pipeline = OptimizationPipeline()
+            pipeline.optimize(ir_program)
             
             if verbose:
                 print("\n Optimization Statistics:")
-                stats = folding.get_stats()
-                for k, v in stats.items():
-                    print(f"  {k}: {v}")
-                stats2 = propagation.get_stats()
-                for k, v in stats2.items():
-                    print(f"  {k}: {v}")
-                stats3 = dce.get_stats()
-                for k, v in stats3.items():
+                for k, v in pipeline.get_stats().items():
                     print(f"  {k}: {v}")
         except ImportError as e:
             if verbose:

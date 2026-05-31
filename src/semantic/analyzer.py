@@ -39,6 +39,78 @@ class SemanticAnalyzer:
         if isinstance(node, ProgramNode):
             for decl in node.declarations:
                 self.collect_declarations(decl)
+
+        elif isinstance(node, FunctionDeclNode):
+            return_type = self.type_system.get_type(node.return_type)
+            if not return_type:
+                return_type = Type(BaseType.UNKNOWN)
+
+            params = []
+            for param in node.params:
+                param_type = self.type_system.get_type(param.type_name)
+                if not param_type:
+                    param_type = Type(BaseType.UNKNOWN)
+
+                param_info = SymbolInfo(
+                    name=param.name,
+                    kind=SymbolKind.PARAMETER,
+                    type=param_type,
+                    line=param.line,
+                    column=param.column,
+                    initialized=True
+                )
+                params.append(param_info)
+
+            func_info = SymbolInfo(
+                name=node.name,
+                kind=SymbolKind.FUNCTION,
+                type=return_type,
+                line=node.line,
+                column=node.column,
+                initialized=True
+            )
+
+            func_info.return_type = return_type
+            func_info.parameters = params
+            func_info.is_variadic = False
+
+            self.symbol_table.insert(node.name, func_info)
+
+        elif isinstance(node, ExternFunctionNode):
+            return_type = self.type_system.get_type(node.return_type)
+            if not return_type:
+                return_type = Type(BaseType.UNKNOWN)
+
+            params = []
+            for param in node.params:
+                param_type = self.type_system.get_type(param.type_name)
+                if not param_type:
+                    param_type = Type(BaseType.UNKNOWN)
+
+                param_info = SymbolInfo(
+                    name=param.name,
+                    kind=SymbolKind.PARAMETER,
+                    type=param_type,
+                    line=param.line,
+                    column=param.column,
+                    initialized=True
+                )
+                params.append(param_info)
+
+            func_info = SymbolInfo(
+                name=node.name,
+                kind=SymbolKind.FUNCTION,
+                type=return_type,
+                line=node.line,
+                column=node.column,
+                initialized=True
+            )
+
+            func_info.return_type = return_type
+            func_info.parameters = params
+            func_info.is_variadic = getattr(node, "is_variadic", False)
+
+            self.symbol_table.insert(node.name, func_info)
         
         elif isinstance(node, ArrayDeclNode):
             element_type = self.type_system.get_type(node.type_name)
@@ -71,12 +143,25 @@ class SemanticAnalyzer:
             var_info = SymbolInfo(
                 name=node.name,
                 kind=SymbolKind.VARIABLE,
-                type=element_type,  # Store element type for now
+                type=element_type,
                 line=node.line,
                 column=node.column,
                 initialized=node.initializer is not None
             )
+
+            # Sprint 7: сохранить размеры массива для проверки bounds
+            sizes = []
+            dims = node.size if isinstance(node.size, list) else [node.size]
+            for dim in dims:
+                if isinstance(dim, LiteralExprNode) and dim.literal_type == "int":
+                    sizes.append(int(dim.value))
+                elif hasattr(dim, "value"):
+                    sizes.append(int(dim.value))
+
+            var_info.array_sizes = sizes
+
             self.symbol_table.insert(node.name, var_info)
+
         
         elif isinstance(node, StructDeclNode):
             # Check for duplicate struct
@@ -163,12 +248,17 @@ class SemanticAnalyzer:
         
         # Analyze size expression
         if node.size:
-            size_type = self.analyze_expression(node.size)
-            if size_type and size_type.base != BaseType.INT:
-                self.errors.append(SemanticError(
-                    f"array size must be integer, got {size_type}",
-                    node.line, node.column
-                ))
+            dims = node.size if isinstance(node.size, list) else [node.size]
+
+            for dim in dims:
+                size_type = self.analyze_expression(dim)
+
+                if size_type and size_type.base != BaseType.INT:
+                    self.errors.append(SemanticError(
+                        f"array size must be integer, got {size_type}",
+                        dim.line,
+                        dim.column
+                    ))
         
         # Analyze initializer if present
         if node.initializer:
@@ -190,6 +280,28 @@ class SemanticAnalyzer:
                         node.line, node.column, str(element_type), str(init_type),
                         f" in initialization of array '{node.name}'"
                     ))
+
+        existing = self.symbol_table.lookup_local(node.name)
+        if not existing:
+            var_info = SymbolInfo(
+                name=node.name,
+                kind=SymbolKind.VARIABLE,
+                type=element_type,
+                line=node.line,
+                column=node.column,
+                initialized=True
+            )
+
+            sizes = []
+            dims = node.size if isinstance(node.size, list) else [node.size]
+            for dim in dims:
+                if isinstance(dim, LiteralExprNode) and dim.literal_type == "int":
+                    sizes.append(int(dim.value))
+                elif hasattr(dim, "value"):
+                    sizes.append(int(dim.value))
+
+            var_info.array_sizes = sizes
+            self.symbol_table.insert(node.name, var_info)
     
     def analyze_function(self, node: FunctionDeclNode):
         """Analyze function declaration"""
@@ -243,11 +355,13 @@ class SemanticAnalyzer:
         """Analyze variable declaration"""
         var_type = self.type_system.get_type(node.type_name)
         if not var_type:
-            var_type = Type(BaseType.UNKNOWN)
-            self.errors.append(SemanticError(
-                f"unknown type '{node.type_name}'", node.line, node.column
-            ))
-        
+            if node.type_name.endswith("*"):
+                var_type = Type(BaseType.UNKNOWN)
+            else:
+                var_type = Type(BaseType.UNKNOWN)
+                self.errors.append(SemanticError(
+                    f"unknown type '{node.type_name}'", node.line, node.column
+                ))
         # Check for duplicate in current scope
         existing = self.symbol_table.lookup_local(node.name)
         if existing:
@@ -404,36 +518,74 @@ class SemanticAnalyzer:
             return self.analyze_call(node)
         elif isinstance(node, AssignmentExprNode):
             return self.analyze_assignment(node)
+        elif isinstance(node, ArrayAssignmentNode):
+            array_type = self.analyze_array_access(
+                ArrayAccessNode(node.array, node.index, node.line, node.column)
+            )
+            value_type = self.analyze_expression(node.value)
+
+            if not self.type_system.is_compatible(value_type, array_type):
+                self.errors.append(TypeMismatchError(
+                    node.line, node.column, str(array_type), str(value_type),
+                    " in array assignment"
+                ))
+
+            return array_type
         elif isinstance(node, ArrayAccessNode):
             return self.analyze_array_access(node)
         
         return Type(BaseType.UNKNOWN)
     
     def analyze_array_access(self, node: ArrayAccessNode) -> Type:
-        """Analyze array access: arr[index]"""
-        # Get array variable
-        if isinstance(node.array, IdentifierExprNode):
-            symbol = self.symbol_table.lookup(node.array.name)
-            if not symbol:
-                self.errors.append(SemanticError(
-                    f"undeclared array '{node.array.name}'",
-                    node.line, node.column
-                ))
-                return Type(BaseType.ERROR)
-            
-            # Check index type
-            index_type = self.analyze_expression(node.index)
+        """Analyze array access: arr[index], including constant bounds check"""
+
+        base_node = node
+        indices = []
+
+        while isinstance(base_node, ArrayAccessNode):
+            indices.append(base_node.index)
+            base_node = base_node.array
+
+        indices.reverse()
+
+        if not isinstance(base_node, IdentifierExprNode):
+            return Type(BaseType.ERROR)
+
+        symbol = self.symbol_table.lookup(base_node.name)
+
+        if not symbol:
+            self.errors.append(SemanticError(
+                f"undeclared array '{base_node.name}'",
+                node.line, node.column
+            ))
+            return Type(BaseType.ERROR)
+
+        for dim_index, index_expr in enumerate(indices):
+            index_type = self.analyze_expression(index_expr)
+
             if index_type and index_type.base != BaseType.ERROR:
                 if index_type.base != BaseType.INT:
                     self.errors.append(SemanticError(
                         f"array index must be integer, got {index_type}",
-                        node.line, node.column
+                        index_expr.line, index_expr.column
                     ))
-            
-            # Return element type
-            return symbol.type
-        
-        return Type(BaseType.ERROR)
+
+            # Проверяем только константные индексы: arr[5]
+            if isinstance(index_expr, LiteralExprNode) and index_expr.literal_type == "int":
+                index_value = int(index_expr.value)
+                sizes = getattr(symbol, "array_sizes", [])
+
+                if dim_index < len(sizes):
+                    size = sizes[dim_index]
+
+                    if index_value < 0 or index_value >= size:
+                        self.errors.append(SemanticError(
+                            f"array index {index_value} out of bounds for array '{base_node.name}' of size {size}",
+                            index_expr.line,
+                            index_expr.column
+                        ))
+
+        return symbol.type
     
     def analyze_literal(self, node: LiteralExprNode) -> Type:
         """Analyze literal expression"""
@@ -477,6 +629,16 @@ class SemanticAnalyzer:
         result_type = self.type_system.get_binary_operator_result_type(
             op, left_type, right_type
         )
+
+        if op in ("==", "!="):
+            left_is_unknown = left_type.base == BaseType.UNKNOWN
+            right_is_unknown = right_type.base == BaseType.UNKNOWN
+
+            left_is_zero = isinstance(node.left, LiteralExprNode) and node.left.literal_type == "int" and int(node.left.value) == 0
+            right_is_zero = isinstance(node.right, LiteralExprNode) and node.right.literal_type == "int" and int(node.right.value) == 0
+
+            if (left_is_unknown and right_is_zero) or (right_is_unknown and left_is_zero):
+                return self.type_system.get_builtin("bool")
         
         if result_type.base == BaseType.ERROR:
             self.errors.append(TypeMismatchError(
@@ -528,21 +690,40 @@ class SemanticAnalyzer:
             ))
             return Type(BaseType.ERROR)
         
-        # Check argument count
         expected_count = len(func_info.parameters) if func_info.parameters else 0
         actual_count = len(node.arguments)
-        
-        if expected_count != actual_count:
-            self.errors.append(ArgumentCountError(
-                node.line, node.column, expected_count, actual_count, callee_name
-            ))
-            return func_info.return_type or Type(BaseType.UNKNOWN)
+        is_variadic = getattr(func_info, "is_variadic", False)
+
+        if is_variadic:
+            # printf(char* format, ...) => минимум 1 обязательный аргумент
+            if actual_count < expected_count:
+                self.errors.append(SemanticError(
+                    f"function '{callee_name}' expects at least {expected_count} arguments, got {actual_count}",
+                    node.line,
+                    node.column
+                ))
+                return func_info.return_type or Type(BaseType.UNKNOWN)
+        else:
+            if expected_count != actual_count:
+                self.errors.append(ArgumentCountError(
+                    node.line, node.column, expected_count, actual_count, callee_name
+                ))
+                return func_info.return_type or Type(BaseType.UNKNOWN)
         
         # Check argument types
         for i, (arg, param) in enumerate(zip(node.arguments, func_info.parameters)):
             arg_type = self.analyze_expression(arg)
             param_type = param.type
-            
+
+            # Sprint 7 extern support:
+            # char*, void* и другие C pointer-типы у нас могут быть UNKNOWN,
+            # поэтому для extern-функций не валим валидные printf/strcpy/malloc.
+            if param_type.base == BaseType.UNKNOWN:
+                continue
+
+            if arg_type.base == BaseType.UNKNOWN:
+                continue
+
             if not self.type_system.is_compatible(arg_type, param_type):
                 self.errors.append(TypeMismatchError(
                     arg.line, arg.column, str(param_type), str(arg_type),

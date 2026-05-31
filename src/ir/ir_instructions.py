@@ -52,6 +52,10 @@ class InstructionType(Enum):
     # Special
     COMMENT = "comment"
 
+    ARRAY_ALLOC = "array_alloc"
+    ARRAY_LOAD = "array_load"
+    ARRAY_STORE = "array_store"
+
 
 @dataclass
 class Operand:
@@ -110,10 +114,10 @@ class Instruction:
                 return f"  jump_if_not {self.src1}, {self.src2}"
         elif self.type == InstructionType.RETURN:
             return f"  return {self.src1}" if self.src1 else "  return"
-        elif self.type == InstructionType.LOAD:
-            return f"  {self.dest} = load {self.src1}"
-        elif self.type == InstructionType.STORE:
-            return f"  store {self.src1}, {self.src2}"
+        elif self.type == InstructionType.ARRAY_LOAD:
+            return f"  {self.dest} = array_load {self.src1}[{self.src2}]"
+        elif self.type == InstructionType.ARRAY_STORE:
+            return f"  array_store {self.dest}[{self.src1}] = {self.src2}"
         elif self.type == InstructionType.ALLOCA:
             return f"  {self.dest} = alloca {self.src1}"
         elif self.type == InstructionType.CALL:
