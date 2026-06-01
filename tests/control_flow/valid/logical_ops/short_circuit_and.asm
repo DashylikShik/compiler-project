@@ -8,7 +8,13 @@ main:
     sub rsp, 64
     mov [rbp-8], 0
     mov [rbp-16], 10
-    cmp [rbp-24], 0
+    mov eax, [rbp-8]
+    cmp eax, 0
+    setne al
+    movzx eax, al
+    mov [rbp-24], eax
+    mov eax, [rbp-24]
+    cmp eax, 0
     je L1
     mov eax, [rbp-16]
     cdq
@@ -19,7 +25,8 @@ main:
     setg al
     movzx eax, al
     mov [rbp-40], eax
-    cmp [rbp-40], 0
+    mov eax, [rbp-40]
+    cmp eax, 0
     je L1
     mov [rbp-48], 1
     jmp L2
@@ -29,12 +36,13 @@ L1:
     jmp L2
 
 L2:
-    cmp [rbp-48], 0
+    mov eax, [rbp-48]
+    cmp eax, 0
     jne L3
     jmp L4
 
 L3:
-    mov rax, 1
+    mov eax, 1
     mov rsp, rbp
     pop rbp
     ret
@@ -43,7 +51,7 @@ L4:
     jmp L5
 
 L5:
-    mov rax, 0
+    mov eax, 0
     mov rsp, rbp
     pop rbp
     ret

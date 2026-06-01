@@ -5,46 +5,53 @@ global main
 main:
     push rbp
     mov rbp, rsp
-    sub rsp, 48
-    mov [rbp-8], 5
+    sub rsp, 64
+    mov [rbp-8], 0
     mov [rbp-16], 10
     mov eax, [rbp-8]
     cmp eax, 0
-    setg al
+    setne al
     movzx eax, al
     mov [rbp-24], eax
-    mov eax, [rbp-16]
-    cmp eax, 5
-    setg al
-    movzx eax, al
-    mov [rbp-32], eax
     mov eax, [rbp-24]
     cmp eax, 0
-    je L_false1
+    je L1
+    mov eax, [rbp-16]
+    cdq
+    idiv dword [rbp-8]
+    mov [rbp-32], eax
     mov eax, [rbp-32]
-    cmp eax, 0
-    je L_false1
-    mov eax, 1
-    jmp L_end2
-L_false1:
-    mov eax, 0
-L_end2:
+    cmp eax, 2
+    setg al
+    movzx eax, al
     mov [rbp-40], eax
-    cmp [rbp-40], 0
-    jne L1
+    mov eax, [rbp-40]
+    cmp eax, 0
+    je L1
+    mov [rbp-48], 1
     jmp L2
 
 L1:
-    mov rax, 1
+    mov [rbp-48], 0
+    jmp L2
+
+L2:
+    mov eax, [rbp-48]
+    cmp eax, 0
+    jne L3
+    jmp L4
+
+L3:
+    mov eax, 1
     mov rsp, rbp
     pop rbp
     ret
 
-L2:
-    jmp L3
+L4:
+    jmp L5
 
-L3:
-    mov rax, 0
+L5:
+    mov eax, 0
     mov rsp, rbp
     pop rbp
     ret

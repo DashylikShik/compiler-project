@@ -57,7 +57,7 @@ class IRGoldenTester:
         
         # Run compiler
         result = subprocess.run(
-            ['python', 'src/main.py', 'ir', temp_file],
+            ['python3', 'src/main.py', 'ir', temp_file],
             capture_output=True,
             text=True,
             cwd=os.path.dirname(os.path.dirname(self.base_dir))

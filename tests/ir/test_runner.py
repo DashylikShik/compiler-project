@@ -18,7 +18,7 @@ class TestIRRequirements(unittest.TestCase):
     
     def run_ir_command(self, args):
         """Run compiler ir command"""
-        cmd = ['python', 'src/main.py', 'ir'] + args
+        cmd = ['python3', 'src/main.py', 'ir'] + args
         result = subprocess.run(
             cmd,
             cwd=self.project_dir,
@@ -241,7 +241,7 @@ def run_all_tests():
     print(f"RESULTS: {result.testsRun} tests, {len(result.failures)} failures, {len(result.errors)} errors")
     
     if result.wasSuccessful():
-        print(" ALL SPRINT 4 TESTS PASSED!")
+        print(" ALL TESTS PASSED!")
         return 0
     else:
         print(" SOME TESTS FAILED")

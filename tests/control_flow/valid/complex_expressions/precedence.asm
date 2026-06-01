@@ -15,7 +15,7 @@ main:
     mov eax, [rbp-8]
     add eax, [rbp-32]
     mov [rbp-40], eax
-    mov rax, [rbp-40]
+    mov eax, dword [rbp-40]
     mov rsp, rbp
     pop rbp
     ret

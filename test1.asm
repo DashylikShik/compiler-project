@@ -5,7 +5,7 @@ global main
 main:
     push rbp
     mov rbp, rsp
-    mov rax, 42
+    mov eax, 42
     mov rsp, rbp
     pop rbp
     ret

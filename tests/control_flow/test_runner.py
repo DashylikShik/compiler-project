@@ -28,7 +28,7 @@ class ControlFlowTester:
         try:
             # Compile
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
@@ -185,7 +185,7 @@ fn main() -> int {
         try:
             # Compile
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
@@ -248,7 +248,7 @@ fn main() -> int {
    
         
         if self.failed == 0:
-            print("\n ALL SPRINT 6 TESTS PASSED!")
+            print("\n ALL TESTS PASSED!")
         else:
             print(f"\ {self.failed} tests failed.")
         

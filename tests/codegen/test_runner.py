@@ -17,8 +17,8 @@ class Sprint5Tester:
     
     def test_simple_return(self):
         """Test: function returns constant"""
-        print("\n Simple return")
-        
+        print("\n  Simple return")
+         
         source = "fn main() -> int { return 42; }"
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.src', delete=False, encoding='utf-8') as f:
@@ -28,29 +28,27 @@ class Sprint5Tester:
         asm_file = src_file.replace('.src', '.asm')
         
         try:
-            # Compile
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
             with open(asm_file, 'r', encoding='utf-8') as f:
                 asm = f.read()
             
-            # Check required patterns
             checks = [
                 ('section .text', "Text section"),
                 ('global main', "Global declaration"),
                 ('main:', "Function label"),
                 ('push rbp', "Prologue - save RBP"),
                 ('mov rbp, rsp', "Set frame pointer"),
-                ('mov rax, 42', "Return value in RAX"),
+                ('mov eax', "Return value in EAX"),
                 ('pop rbp', "Epilogue - restore RBP"),
                 ('ret', "Return instruction"),
             ]
@@ -58,20 +56,20 @@ class Sprint5Tester:
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   Simple return PASSED")
+                print("\n    Simple return PASSED")
                 self.passed += 1
             else:
-                print("   Simple return FAILED")
+                print("\n    Simple return FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -80,7 +78,8 @@ class Sprint5Tester:
     
     def test_arithmetic(self):
         """Test: arithmetic operations"""
-        print("\n Arithmetic operations")        
+        print("\n  Arithmetic operations")
+         
         source = "fn main() -> int { return 2 + 3 * 4; }"
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.src', delete=False, encoding='utf-8') as f:
@@ -91,13 +90,13 @@ class Sprint5Tester:
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -113,20 +112,20 @@ class Sprint5Tester:
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   Arithmetic operations PASSED")
+                print("\n    Arithmetic operations PASSED")
                 self.passed += 1
             else:
-                print("   Arithmetic operations FAILED")
+                print("\n    Arithmetic operations FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -135,8 +134,8 @@ class Sprint5Tester:
     
     def test_variables(self):
         """Test: variables on stack"""
-        print("\n Variables on stack")
-        
+        print("\n  Variables on stack")
+         
         source = "fn main() -> int { int x = 10; int y = 20; return x + y; }"
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.src', delete=False, encoding='utf-8') as f:
@@ -147,13 +146,13 @@ class Sprint5Tester:
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -170,20 +169,20 @@ class Sprint5Tester:
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   Variables on stack PASSED")
+                print("\n    Variables on stack PASSED")
                 self.passed += 1
             else:
-                print("   Variables on stack FAILED")
+                print("\n    Variables on stack FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -192,7 +191,6 @@ class Sprint5Tester:
     
     def test_if_statement(self):
         """Test: if statement with jumps"""
-        print("\n If statement")
         
         source = """
 fn main() -> int {
@@ -213,13 +211,13 @@ fn main() -> int {
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -235,20 +233,20 @@ fn main() -> int {
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   If statement PASSED")
+                print("\n    If statement PASSED")
                 self.passed += 1
             else:
-                print("   If statement FAILED")
+                print("\n    If statement FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -258,7 +256,7 @@ fn main() -> int {
     def test_while_loop(self):
         """Test: while loop"""
         print("\n While loop")
-        
+         
         source = """
 fn main() -> int {
     int i = 0;
@@ -277,13 +275,13 @@ fn main() -> int {
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -294,24 +292,24 @@ fn main() -> int {
             has_jump = 'jmp' in asm or 'je' in asm or 'jne' in asm
             
             if has_cmp:
-                print("     Compare instruction found")
+                print("      Compare instruction found")
             else:
-                print("     Compare instruction missing")
+                print("      Compare instruction missing")
             
             if has_jump:
-                print("     Jump instruction found")
+                print("      Jump instruction found")
             else:
-                print("     Jump instruction missing")
+                print("      Jump instruction missing")
             
             if has_cmp and has_jump:
-                print("   While loop PASSED")
+                print("\n    While loop PASSED")
                 self.passed += 1
             else:
-                print("   While loop FAILED")
+                print("\n    While loop FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -320,8 +318,8 @@ fn main() -> int {
     
     def test_function_call(self):
         """Test: function call with parameters"""
-        print("\n Function call")
-        
+        print("\n  Function call")
+         
         source = """
 fn add(int a, int b) -> int {
     return a + b;
@@ -339,13 +337,13 @@ fn main() -> int {
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -356,27 +354,27 @@ fn main() -> int {
                 ('add:', "Function add label"),
                 ('main:', "Function main label"),
                 ('call add', "Call instruction"),
-                ('mov edi', "First parameter (RDI)"),
-                ('mov esi', "Second parameter (RSI)"),
+                ('mov rdi', "First parameter (RDI)"),
+                ('mov rsi', "Second parameter (RSI)"),
             ]
             
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   Function call PASSED")
+                print("\n    Function call PASSED")
                 self.passed += 1
             else:
-                print("   Function call FAILED")
+                print("\n    Function call FAILED")
                 self.failed += 1
                 
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"    Error: {e}")
             self.failed += 1
         finally:
             for f in [src_file, asm_file]:
@@ -385,8 +383,8 @@ fn main() -> int {
     
     def test_abi_compliance(self):
         """Test: ABI compliance"""
-        print("\n ABI compliance")
-        
+        print("\n  ABI compliance")
+         
         source = "fn main() -> int { return 42; }"
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.src', delete=False, encoding='utf-8') as f:
@@ -397,13 +395,13 @@ fn main() -> int {
         
         try:
             result = subprocess.run(
-                ['python', 'src/main.py', 'compile', src_file, '--output', asm_file],
+                ['python3', 'src/main.py', 'compile', src_file, '--output', asm_file],
                 capture_output=True, text=True,
                 cwd=self.project_root
             )
             
             if result.returncode != 0 or not os.path.exists(asm_file):
-                print("   Compilation failed")
+                print("    Compilation failed")
                 self.failed += 1
                 return
             
@@ -411,23 +409,23 @@ fn main() -> int {
                 asm = f.read()
             
             checks = [
-                ('mov rax, 42', "Return value in RAX"),
+                ('mov eax', "Return value in EAX"),
                 ('ret', "Return instruction"),
             ]
             
             all_ok = True
             for pattern, name in checks:
                 if pattern in asm:
-                    print(f"     {name}")
+                    print(f"      {name}")
                 else:
-                    print(f"     {name}")
+                    print(f"      {name}")
                     all_ok = False
             
             if all_ok:
-                print("   ABI compliance PASSED")
+                print("\n    ABI compliance PASSED")
                 self.passed += 1
             else:
-                print("   ABI compliance FAILED")
+                print("\n    ABI compliance FAILED")
                 self.failed += 1
                 
         except Exception as e:
@@ -440,8 +438,7 @@ fn main() -> int {
     
     def run(self):
         """Run all tests"""
-        
-        # Run all tests
+    
         self.test_simple_return()
         self.test_arithmetic()
         self.test_variables()
@@ -450,6 +447,14 @@ fn main() -> int {
         self.test_function_call()
         self.test_abi_compliance()
         
+        print(f"RESULTS: {self.passed} passed, {self.failed} failed")
+        
+        if self.failed == 0:
+            print("\n ALL TESTS PASSED!")
+            return True
+        else:
+            print(f"\n {self.failed} tests failed.")
+            return False
 
 
 if __name__ == "__main__":

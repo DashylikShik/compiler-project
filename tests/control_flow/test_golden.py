@@ -22,7 +22,7 @@ class GoldenTester:
         
         # Компилируем в ассемблер
         result = subprocess.run(
-            ['python', 'src/main.py', 'compile', src_file],
+            ['python3', 'src/main.py', 'compile', src_file],
             capture_output=True, text=True,
             cwd=self.project_root
         )

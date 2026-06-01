@@ -41,6 +41,20 @@ class SemanticAnalyzer:
                 self.collect_declarations(decl)
 
         elif isinstance(node, FunctionDeclNode):
+
+            existing = self.symbol_table.lookup_global(node.name)
+
+            if existing:
+                self.errors.append(
+                    DuplicateDeclarationError(
+                        node.name,
+                        node.line,
+                        node.column,
+                        existing.line
+                    )
+                )
+                return
+            
             return_type = self.type_system.get_type(node.return_type)
             if not return_type:
                 return_type = Type(BaseType.UNKNOWN)
@@ -331,6 +345,7 @@ class SemanticAnalyzer:
             self.symbol_table.insert(param.name, param_info)
             self.initialized_vars.add(param.name)
         
+
         # Analyze function body
         if node.body:
             self.analyze_statement(node.body)

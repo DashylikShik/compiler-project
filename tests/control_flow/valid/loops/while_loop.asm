@@ -16,7 +16,8 @@ L1:
     setl al
     movzx eax, al
     mov [rbp-24], eax
-    cmp [rbp-24], 0
+    mov eax, [rbp-24]
+    cmp eax, 0
     jne L2
     jmp L3
 
@@ -34,7 +35,7 @@ L2:
     jmp L1
 
 L3:
-    mov rax, [rbp-16]
+    mov eax, dword [rbp-16]
     mov rsp, rbp
     pop rbp
     ret
