@@ -453,7 +453,7 @@ Linux:
 python3 src/main.py compile tests/array/valid/01_declaration.src
 nasm -f elf64 tests/array/valid/01_declaration.asm -o 01_declaration.o
 gcc -no-pie 01_declaration.o  -o 01_declaration
-./01_declaratiom
+./01_declaration
 echo $?
 
 echo "02_initialized:"
