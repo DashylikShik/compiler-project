@@ -9,7 +9,7 @@ main:
     sub rsp, 32
     mov rdi, 12
     call malloc
-    mov [rbp-8], rax
+    mov qword [rbp-8], rax
     mov r10, [rbp-8]
     mov r11, 0
     shl r11, 2
@@ -33,7 +33,7 @@ main:
     shl r11, 2
     add r10, r11
     mov eax, dword [r10]
-    mov [rbp-16], rax
+    mov qword [rbp-16], rax
     mov eax, dword [rbp-16]
     mov rsp, rbp
     pop rbp

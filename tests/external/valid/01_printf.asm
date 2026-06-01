@@ -13,7 +13,7 @@ main:
     lea rdi, [rel LC1]
     xor eax, eax
     call printf
-    mov [rbp-8], rax
+    mov qword [rbp-8], rax
     mov eax, 0
     mov rsp, rbp
     pop rbp

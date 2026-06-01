@@ -6,8 +6,8 @@ main:
     push rbp
     mov rbp, rsp
     sub rsp, 48
-    mov [rbp-8], 0
-    mov [rbp-16], 0
+    mov dword [rbp-8], 0
+    mov dword [rbp-16], 0
     jmp L1
 
 L1:
@@ -15,7 +15,7 @@ L1:
     cmp eax, 5
     setl al
     movzx eax, al
-    mov [rbp-24], eax
+    mov dword [rbp-24], eax
     mov eax, [rbp-24]
     cmp eax, 0
     jne L2
@@ -24,17 +24,17 @@ L1:
 L2:
     mov eax, [rbp-8]
     add eax, [rbp-16]
-    mov [rbp-32], eax
-    mov eax, [rbp-32]
-    mov [rbp-8], eax
+    mov dword [rbp-32], eax
+    mov eax, dword [rbp-32]
+    mov dword [rbp-8], eax
     jmp L3
 
 L3:
     mov eax, [rbp-16]
     add eax, 1
-    mov [rbp-40], eax
-    mov eax, [rbp-40]
-    mov [rbp-16], eax
+    mov dword [rbp-40], eax
+    mov eax, dword [rbp-40]
+    mov dword [rbp-16], eax
     jmp L1
 
 L4:

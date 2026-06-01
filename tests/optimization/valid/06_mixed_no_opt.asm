@@ -8,19 +8,19 @@ main:
     sub rsp, 48
     mov eax, 2
     add eax, 3
-    mov [rbp-8], eax
-    mov eax, [rbp-8]
-    mov [rbp-16], eax
+    mov dword [rbp-8], eax
+    mov eax, dword [rbp-8]
+    mov dword [rbp-16], eax
     mov eax, [rbp-16]
     imul eax, 2
-    mov [rbp-24], eax
-    mov eax, [rbp-24]
-    mov [rbp-32], eax
+    mov dword [rbp-24], eax
+    mov eax, dword [rbp-24]
+    mov dword [rbp-32], eax
     mov eax, [rbp-32]
     cmp eax, 10
     setg al
     movzx eax, al
-    mov [rbp-40], eax
+    mov dword [rbp-40], eax
     mov eax, [rbp-40]
     cmp eax, 0
     jne L1

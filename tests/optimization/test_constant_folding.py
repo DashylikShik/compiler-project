@@ -5,10 +5,10 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..', 'src'))
 
-from src.ir.ir_instructions import *
-from src.ir.optimizer.constant_folding import ConstantFolding
+from ir.ir_instructions import *
+from ir.optimizer.constant_folding import ConstantFolding
 from src.ir.ir_instructions import BasicBlock
 
 

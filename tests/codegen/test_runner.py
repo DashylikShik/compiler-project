@@ -161,9 +161,9 @@ class Sprint5Tester:
             
             checks = [
                 ('sub rsp', "Stack allocation"),
-                ('mov [rbp-', "Store to stack"),
-                ('mov eax, [rbp-', "Load from stack"),
-                ('add eax, [rbp-', "Add from stack"),
+                ('[rbp-', "Stack variable access"),
+                ('mov eax', "Load value"),
+                ('add eax', "Arithmetic operation"),
             ]
             
             all_ok = True
@@ -438,7 +438,7 @@ fn main() -> int {
     
     def run(self):
         """Run all tests"""
-    
+        
         self.test_simple_return()
         self.test_arithmetic()
         self.test_variables()

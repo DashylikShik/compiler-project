@@ -247,7 +247,10 @@ class X86Generator:
         
         self.sections['text'].append(f"    mov eax, {src1}")
         self.sections['text'].append(f"    add eax, {src2}")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_sub(self, instr: Instruction):
         """Generate SUB instruction"""
@@ -257,7 +260,10 @@ class X86Generator:
         
         self.sections['text'].append(f"    mov eax, {src1}")
         self.sections['text'].append(f"    sub eax, {src2}")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_mul(self, instr: Instruction):
         """Generate MUL instruction"""
@@ -267,7 +273,10 @@ class X86Generator:
         
         self.sections['text'].append(f"    mov eax, {src1}")
         self.sections['text'].append(f"    imul eax, {src2}")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_div(self, instr: Instruction):
         """Generate DIV instruction"""
@@ -278,7 +287,10 @@ class X86Generator:
         self.sections['text'].append(f"    mov eax, {src1}")
         self.sections['text'].append(f"    cdq")
         self.sections['text'].append(f"    idiv dword {src2}")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_move(self, instr: Instruction):
         """Generate MOVE instruction"""
@@ -289,8 +301,19 @@ class X86Generator:
             return
         
         if src.startswith('[') and dest.startswith('['):
-            self.sections['text'].append(f"    mov eax, {src}")
-            self.sections['text'].append(f"    mov {dest}, eax")
+            self.sections['text'].append(f"    mov eax, dword {src}")
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+
+        elif dest.startswith('['):
+            if str(src).lstrip('-').isdigit():
+                self.sections['text'].append(f"    mov dword {dest}, {src}")
+            elif src == "eax":
+                self.sections['text'].append(f"    mov dword {dest}, eax")
+            elif src == "rax":
+                self.sections['text'].append(f"    mov qword {dest}, rax")
+            else:
+                self.sections['text'].append(f"    mov qword {dest}, {src}")
+
         else:
             self.sections['text'].append(f"    mov {dest}, {src}")
     
@@ -363,7 +386,10 @@ class X86Generator:
         self.sections['text'].append(f"    mov eax, 0")
         
         self.sections['text'].append(f"{end_label}:")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_logical_or(self, instr: Instruction):
         """Generate short-circuit OR (||) with correct ordering"""
@@ -394,7 +420,10 @@ class X86Generator:
         self.sections['text'].append(f"    mov eax, 1")
         
         self.sections['text'].append(f"{end_label}:")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_logical_not(self, instr: Instruction):
         """Generate NOT (!) instruction"""
@@ -405,7 +434,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, 0")
         self.sections['text'].append(f"    sete al")
         self.sections['text'].append(f"    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_cmp_eq(self, instr: Instruction):
         """Generate equality comparison (==)"""
@@ -417,8 +449,11 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append(f"    sete al")
         self.sections['text'].append(f"    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
-    
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
+            
     def gen_cmp_lt(self, instr: Instruction):
         """Generate less than comparison (<)"""
         left = self.get_operand(instr.src1)
@@ -429,7 +464,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append(f"    setl al")
         self.sections['text'].append(f"    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_cmp_gt(self, instr: Instruction):
         """Generate greater than comparison (>)"""
@@ -441,7 +479,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append(f"    setg al")
         self.sections['text'].append(f"    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
     
     def gen_cmp_ne(self, instr: Instruction):
         left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
@@ -449,7 +490,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append("    setne al")
         self.sections['text'].append("    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
 
     def gen_cmp_le(self, instr: Instruction):
         left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
@@ -457,7 +501,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append("    setle al")
         self.sections['text'].append("    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
 
     def gen_cmp_ge(self, instr: Instruction):
         left = self.get_operand(instr.src1); right = self.get_operand(instr.src2); dest = self.get_operand(instr.dest)
@@ -465,7 +512,10 @@ class X86Generator:
         self.sections['text'].append(f"    cmp eax, {right}")
         self.sections['text'].append("    setge al")
         self.sections['text'].append("    movzx eax, al")
-        self.sections['text'].append(f"    mov {dest}, eax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov dword {dest}, eax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, eax")
 
     def gen_array_load(self, instr: Instruction):
         base = self.get_operand(instr.src1)
@@ -476,7 +526,10 @@ class X86Generator:
         self.sections['text'].append("    shl r11, 2")
         self.sections['text'].append("    add r10, r11")
         self.sections['text'].append("    mov eax, dword [r10]")
-        self.sections['text'].append(f"    mov {dest}, rax")
+        if dest.startswith('['):
+            self.sections['text'].append(f"    mov qword {dest}, rax")
+        else:
+            self.sections['text'].append(f"    mov {dest}, rax")
 
     def gen_array_store(self, instr: Instruction):
         base = self.get_operand(instr.dest)
@@ -509,7 +562,10 @@ class X86Generator:
 
         if instr.dest:
             dest = self.get_operand(instr.dest)
-            self.sections['text'].append(f"    mov {dest}, rax")
+            if dest.startswith('['):
+                self.sections['text'].append(f"    mov qword {dest}, rax")
+            else:
+                self.sections['text'].append(f"    mov {dest}, rax")
 
     def gen_param(self, instr: Instruction):
         """Generate PARAM instruction. Integer and pointer args use 64-bit ABI regs."""

@@ -14,16 +14,16 @@ main:
     sub rsp, 48
     mov rdi, 80
     call malloc
-    mov [rbp-8], rax
+    mov qword [rbp-8], rax
     mov rdi, [rbp-8]
     lea rsi, [rel LC1]
     call strcpy
-    mov [rbp-16], rax
+    mov qword [rbp-16], rax
     mov rdi, [rbp-8]
     call strlen
-    mov [rbp-24], rax
-    mov eax, [rbp-24]
-    mov [rbp-32], eax
+    mov qword [rbp-24], rax
+    mov eax, dword [rbp-24]
+    mov dword [rbp-32], eax
     mov eax, dword [rbp-32]
     mov rsp, rbp
     pop rbp

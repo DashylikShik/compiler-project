@@ -1,16 +1,6 @@
 extern int printf(char* format, ...);
-extern void* malloc(int size);
-extern void free(void* ptr);
-extern int strlen(char* str);
 
 fn main() -> int {
-    printf("Sprint 7 external demo\n");
-
-    void* ptr = malloc(4);
-    if (ptr != 0) {
-        free(ptr);
-    }
-
-    int len = strlen("hello");
-    return len;
+    printf("Sprint 8 external demo\n");
+    return 5;
 }

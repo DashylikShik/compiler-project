@@ -10,7 +10,7 @@ main:
     cmp eax, 2
     setg al
     movzx eax, al
-    mov [rbp-8], eax
+    mov dword [rbp-8], eax
     mov eax, [rbp-8]
     cmp eax, 0
     jne L1

@@ -10,14 +10,14 @@ main:
     sub rsp, 48
     mov rdi, 4
     call malloc
-    mov [rbp-8], rax
-    mov eax, [rbp-8]
-    mov [rbp-16], eax
+    mov qword [rbp-8], rax
+    mov eax, dword [rbp-8]
+    mov dword [rbp-16], eax
     mov eax, [rbp-16]
     cmp eax, 0
     setne al
     movzx eax, al
-    mov [rbp-24], eax
+    mov dword [rbp-24], eax
     mov eax, [rbp-24]
     cmp eax, 0
     jne L1
@@ -26,7 +26,7 @@ main:
 L1:
     mov rdi, [rbp-16]
     call free
-    mov [rbp-32], rax
+    mov qword [rbp-32], rax
     jmp L3
 
 L2:

@@ -153,6 +153,7 @@ dot -Tpng ast.dot -o ast.png
 
 # Просмотр
 start ast.png
+xdg-open ast.png
 
 
 ## Sprint 3 - Семантический анализатор
@@ -381,6 +382,21 @@ python3 tests\control_flow\test_golden.py
 # Второй запуск - сравнит с expected
 python3 tests\control_flow\test_golden.py
 
+# Перезапись тестов
+python3 src/main.py compile tests/control_flow/valid/conditionals/if_else.src
+cp tests/control_flow/valid/conditionals/if_else.asm tests/control_flow/valid/conditionals/expected/if_else.expected
+
+python3 src/main.py compile tests/control_flow/valid/loops/while_loop.src
+cp tests/control_flow/valid/loops/while_loop.asm tests/control_flow/valid/loops/expected/while_loop.expected
+
+python3 src/main.py compile tests/control_flow/valid/loops/for_loop.src
+cp tests/control_flow/valid/loops/for_loop.asm tests/control_flow/valid/loops/expected/for_loop.expected
+
+python3 src/main.py compile tests/control_flow/valid/logical_ops/short_circuit_and.src
+cp tests/control_flow/valid/logical_ops/short_circuit_and.asm tests/control_flow/valid/logical_ops/expected/short_circuit_and.expected
+
+python3 src/main.py compile tests/control_flow/valid/complex_expressions/precedence.src
+cp tests/control_flow/valid/complex_expressions/precedence.asm tests/control_flow/valid/complex_expressions/expected/precedence.expected
 
 # 1. Переход в папку проекта
 cd C:\Users\Пользователь\Desktop\compiler-project

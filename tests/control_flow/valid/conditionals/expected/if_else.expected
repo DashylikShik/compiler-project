@@ -6,12 +6,12 @@ main:
     push rbp
     mov rbp, rsp
     sub rsp, 32
-    mov [rbp-8], 5
+    mov dword [rbp-8], 5
     mov eax, [rbp-8]
     cmp eax, 0
     setg al
     movzx eax, al
-    mov [rbp-16], eax
+    mov dword [rbp-16], eax
     mov eax, [rbp-16]
     cmp eax, 0
     jne L1

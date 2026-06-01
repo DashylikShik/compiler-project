@@ -6,33 +6,33 @@ main:
     push rbp
     mov rbp, rsp
     sub rsp, 64
-    mov [rbp-8], 0
-    mov [rbp-16], 10
+    mov dword [rbp-8], 0
+    mov dword [rbp-16], 10
     mov eax, [rbp-8]
     cmp eax, 0
     setne al
     movzx eax, al
-    mov [rbp-24], eax
+    mov dword [rbp-24], eax
     mov eax, [rbp-24]
     cmp eax, 0
     je L1
     mov eax, [rbp-16]
     cdq
     idiv dword [rbp-8]
-    mov [rbp-32], eax
+    mov dword [rbp-32], eax
     mov eax, [rbp-32]
     cmp eax, 2
     setg al
     movzx eax, al
-    mov [rbp-40], eax
+    mov dword [rbp-40], eax
     mov eax, [rbp-40]
     cmp eax, 0
     je L1
-    mov [rbp-48], 1
+    mov dword [rbp-48], 1
     jmp L2
 
 L1:
-    mov [rbp-48], 0
+    mov dword [rbp-48], 0
     jmp L2
 
 L2:
