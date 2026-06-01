@@ -1,40 +1,22 @@
-"""
-Setup configuration for MiniCompiler
-Позволяет установить проект как пакет и использовать команду 'compiler'
-"""
-
 from setuptools import setup, find_packages
 
 setup(
     name="minicompiler",
     version="1.0.0",
-    description="Лексический анализатор для учебного компилятора",
-    author="Student",
-    author_email="student@example.com",
+    description="Учебный компилятор MiniCompiler: lexer, parser, semantic, IR, x86 codegen, optimization",
+    author="DashylikShik",
     packages=find_packages(where="src"),
+    py_modules=["main"],
     package_dir={"": "src"},
-    
-    # Зависимости проекта
+    python_requires=">=3.10",
     install_requires=[
-        # Нет внешних зависимостей для Sprint 1
+        "pytest",
     ],
-    
-    # Точки входа - создают команду в терминале
     entry_points={
         "console_scripts": [
-            "compiler=src.main:main",  # команда 'compiler' запускает main()
-            "compiler-test=src.main:test",  # команда 'compiler-test' запускает test()
+            "compiler=main:main",
+            "mycc=main:main",
         ],
     },
-    
-    # Метаданные
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Education",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-    ],
-    python_requires=">=3.8",
+    include_package_data=True,
 )

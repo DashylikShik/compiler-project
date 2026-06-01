@@ -1,0 +1,221 @@
+{
+  "timestamp": "2026-06-01T20:59:21",
+  "project_root": "/mnt/c/Users/Пользователь/Desktop/compiler-project",
+  "summary": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "total": 16
+  },
+  "results": [
+    {
+      "name": "Sprint 1: lexer golden tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/test_runner.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "\nVALID TESTS (20 шт) - сравнение токенов\n   01_identifiers\n   02_numbers\n   03_floats\n   04_keywords\n   05_operators_arith\n   06_operators_compare\n   07_operators_logical\n   08_operators_assign\n   09_delimiters\n   10_comments\n   11_nested_comments\n   12_strings\n   13_expressions\n   14_functions\n   15_conditionals\n   16_loops\n   17_variables\n   18_types\n   19_booleans\n   20_all_features\n\nINVALID TESTS (10 шт) - сравнение ошибок\n   01_invalid_char (найдено ошибок: 4)\n   02_unterminated_string (найдено ошибок: 1)\n   03_unterminated_comment (найдено ошибок: 1)\n   04_malformed_number (найдено ошибок: 4)\n   05_out_of_range (найдено ошибок: 3)\n   06_invalid_identifier (найдено ошибок: 4)\n   07_missing_quote (найдено ошибок: 1)\n   08_invalid_operator (найдено ошибок: 3)\n   09_empty_comment (найдено ошибок: 1)\n   10_mixed_errors (найдено ошибок: 3)\n\nРЕЗУЛЬТАТЫ\n  Всего тестов: 30 (20 valid + 10 invalid)\n   Пройдено: 30\n   Провалено: 0\n\n   ВСЕ 30 ТЕСТОВ ПРОЙДЕНЫ!\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 2: parser pytest tests",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "tests/parser",
+        "-v"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "esktop/compiler-project/tests/parser/valid/statements/for_loop.src] PASSED [ 71%]\ntests/parser/test_parser.py::test_golden_valid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/valid/statements/test_for.src] PASSED [ 73%]\ntests/parser/test_parser.py::test_golden_valid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/valid/statements/test_if.src] PASSED [ 75%]\ntests/parser/test_parser.py::test_golden_valid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/valid/statements/test_return.src] PASSED [ 77%]\ntests/parser/test_parser.py::test_golden_valid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/valid/statements/test_var_decl.src] PASSED [ 80%]\ntests/parser/test_parser.py::test_golden_valid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/valid/statements/test_while.src] PASSED [ 82%]\ntests/parser/test_parser.py::test_golden_invalid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/invalid/syntax_errors/bad_expression.src] PASSED [ 84%]\ntests/parser/test_parser.py::test_golden_invalid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/invalid/syntax_errors/missing_brace.src] PASSED [ 86%]\ntests/parser/test_parser.py::test_golden_invalid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/invalid/syntax_errors/test_missing_paren.src] PASSED [ 88%]\ntests/parser/test_parser.py::test_golden_invalid[/mnt/c/Users/\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c/Desktop/compiler-project/tests/parser/invalid/syntax_errors/test_missing_semicolon.src] PASSED [ 91%]\ntests/parser/test_parser.py::test_recovery_missing_semicolon PASSED      [ 93%]\ntests/parser/test_parser.py::test_error_location_accuracy PASSED         [ 95%]\ntests/parser/test_parser.py::test_lexer_parser_integration SKIPPED (...) [ 97%]\ntests/parser/test_parser.py::test_roundtrip_stability PASSED             [100%]\n\n======================== 44 passed, 1 skipped in 1.18s =========================\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 3: semantic unit tests",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "tests.test_semantic",
+        "-v"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "",
+      "stderr_tail": "test_argument_count_mismatch (tests.test_semantic.TestSemanticAnalyzerInvalid.test_argument_count_mismatch) ... ok\ntest_duplicate_function (tests.test_semantic.TestSemanticAnalyzerInvalid.test_duplicate_function) ... ok\ntest_duplicate_struct (tests.test_semantic.TestSemanticAnalyzerInvalid.test_duplicate_struct) ... ok\ntest_invalid_condition (tests.test_semantic.TestSemanticAnalyzerInvalid.test_invalid_condition) ... ok\ntest_return_type_mismatch (tests.test_semantic.TestSemanticAnalyzerInvalid.test_return_type_mismatch) ... ok\ntest_type_mismatch (tests.test_semantic.TestSemanticAnalyzerInvalid.test_type_mismatch) ... ok\ntest_undeclared_variable (tests.test_semantic.TestSemanticAnalyzerInvalid.test_undeclared_variable) ... ok\ntest_binary_operations (tests.test_semantic.TestSemanticAnalyzerValid.test_binary_operations) ... ok\ntest_function_call (tests.test_semantic.TestSemanticAnalyzerValid.test_function_call) ... ok\ntest_valid_declarations (tests.test_semantic.TestSemanticAnalyzerValid.test_valid_declarations) ... ok\ntest_valid_variable_declaration (tests.test_semantic.TestSemanticAnalyzerValid.test_valid_variable_declaration) ... ok\ntest_basic_operations (tests.test_semantic.TestSymbolTable.test_basic_operations) ... ok\ntest_duplicate_prevention (tests.test_semantic.TestSymbolTable.test_duplicate_prevention) ... ok\ntest_scope_nesting (tests.test_semantic.TestSymbolTable.test_scope_nesting) ... ok\ntest_binary_operator_types (tests.test_semantic.TestTypeSystem.test_binary_operator_types) ... ok\ntest_builtin_types (tests.test_semantic.TestTypeSystem.test_builtin_types) ... ok\ntest_type_compatibility (tests.test_semantic.TestTypeSystem.test_type_compatibility) ... ok\n\n----------------------------------------------------------------------\nRan 17 tests in 0.003s\n\nOK\n",
+      "note": ""
+    },
+    {
+      "name": "Sprint 4: IR unit tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/ir/test_runner.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "   TEST-1.1: Addition expression works\n   TEST-1.2: Multiplication expression works\n   TEST-1.3: Nested arithmetic works\n   TEST-2.1: If statement works\n   TEST-2.2: While loop works\n   TEST-3.1: Function call works\n   TEST-3.2: Parameter passing works\n   TEST-4.1: Text output works\n   TEST-4.2: DOT output works\n   TEST-4.3: JSON output works\n   TEST-5.1: Statistics output works\n   TEST-6.1: Temporary variables work\n   TEST-7.1: Multiple functions work\n   TEST-8.1: Variable assignment works\n\nRESULTS: 14 tests, 0 failures, 0 errors\n ALL TESTS PASSED!\n",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 14 tests in 12.738s\n\nOK\n",
+      "note": ""
+    },
+    {
+      "name": "Sprint 4: IR golden tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/ir/test_golden.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "GOLDEN TESTS FOR IR GENERATION\n\n   expressions/arithmetic\n   expressions/multiplication\n   expressions/nested\n   control_flow/if_statement\n   control_flow/while_loop\n   functions/call\n   functions/multiple\n\nRESULTS: 7 passed, 0 failed\n ALL GOLDEN TESTS PASSED!\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 5: x86 codegen tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/codegen/test_runner.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "\n  Simple return\n      Text section\n      Global declaration\n      Function label\n      Prologue - save RBP\n      Set frame pointer\n      Return value in EAX\n      Epilogue - restore RBP\n      Return instruction\n\n    Simple return PASSED\n\n  Arithmetic operations\n      Multiplication (IMUL)\n      Addition (ADD)\n      Move to EAX\n\n    Arithmetic operations PASSED\n\n  Variables on stack\n      Stack allocation\n      Store to stack\n      Load from stack\n      Add from stack\n\n    Variables on stack PASSED\n      Compare instruction\n      Conditional jump (JNE)\n      Unconditional jump (JMP)\n\n    If statement PASSED\n\n While loop\n      Compare instruction found\n      Jump instruction found\n\n    While loop PASSED\n\n  Function call\n      Function add label\n      Function main label\n      Call instruction\n      First parameter (RDI)\n      Second parameter (RSI)\n\n    Function call PASSED\n\n  ABI compliance\n      Return value in EAX\n      Return instruction\n\n    ABI compliance PASSED\nRESULTS: 7 passed, 0 failed\n\n ALL TESTS PASSED!\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 6: control-flow tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/control_flow/test_runner.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "\n Short-circuit AND\n     Conditional jumps found\n    Unconditional jumps found\n   Short-circuit AND PASSED\n\n Short-circuit OR\n     Conditional jumps found\n    Unconditional jumps found\n   Short-circuit OR PASSED\n\n Nested conditionals\n     Conditional jumps found\n    Unconditional jumps found\n   Nested conditionals PASSED\n\n While loop\n     Conditional jumps found\n    Unconditional jumps found\n   While loop PASSED\n\n For loop\n     Conditional jumps found\n    Unconditional jumps found\n   For loop PASSED\n\n Nested loops\n     Conditional jumps found\n    Unconditional jumps found\n   Nested loops PASSED\n\n Operator precedence\n     Multiplication found (precedence: * before +)\n     Addition found\n     Comparison found\n  Operator precedence PASSED\nRESULTS: 7 passed, 0 failed\n\n ALL TESTS PASSED!\n",
+      "stderr_tail": "/mnt/c/Users/Пользователь/Desktop/compiler-project/tests/control_flow/test_runner.py:253: SyntaxWarning: \"\\ \" is an invalid escape sequence. Such sequences will not work in the future. Did you mean \"\\\\ \"? A raw string is also an option.\n  print(f\"\\ {self.failed} tests failed.\")\n",
+      "note": ""
+    },
+    {
+      "name": "Sprint 6: control-flow golden tests",
+      "command": [
+        "/usr/bin/python3",
+        "tests/control_flow/test_golden.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "\n\n conditionals/if_else\n   if_else - PASSED (matches expected)\n\n loops/while_loop\n   while_loop - PASSED (matches expected)\n\n loops/for_loop\n   for_loop - PASSED (matches expected)\n\n logical_ops/short_circuit_and\n   short_circuit_and - PASSED (matches expected)\n\n complex_expressions/precedence\n   precedence - PASSED (matches expected)\n   Passed: 5\n   Failed: 0\n   Generated: 0\n\n ALL GOLDEN TESTS PASSED!\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 7: optimization unit tests",
+      "command": [
+        "bash",
+        "-c",
+        "PYTHONPATH=src /usr/bin/python3 -m unittest tests.optimization.test_constant_folding -v"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": " test_fold_addition PASSED\n test_fold_multiplication PASSED\n test_no_fold_with_variable PASSED\n",
+      "stderr_tail": "test_fold_addition (tests.optimization.test_constant_folding.TestConstantFolding.test_fold_addition)\nTest 2 + 3 → 5 ... ok\ntest_fold_multiplication (tests.optimization.test_constant_folding.TestConstantFolding.test_fold_multiplication)\nTest 4 * 5 → 20 ... ok\ntest_no_fold_with_variable (tests.optimization.test_constant_folding.TestConstantFolding.test_no_fold_with_variable)\nTest x + 3 should not be folded ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nOK\n",
+      "note": ""
+    },
+    {
+      "name": "Sprint 7: arrays/external/optimization integration",
+      "command": [
+        "/usr/bin/python3",
+        "run_valid_tests.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "d/04_compare_opt.asm\n$ diff -u tests/optimization/valid/04_compare_no_opt.asm tests/optimization/valid/04_compare_opt.asm\n$ nasm -f elf64 tests/optimization/valid/04_compare.asm -o 04_compare_opt.o\n$ gcc -no-pie 04_compare_opt.o -o 04_compare_opt\n$ ./04_compare_opt\nRETURN CODE: 1\n\nCOMPARE: tests/optimization/valid/04_compare.src\nWITHOUT OPTIMIZE: 1\nWITH OPTIMIZE:    1\nRESULT: OK\nTEST: tests/optimization/valid/05_logic.src\nMODE: NORMAL\n$ python3 src/main.py check tests/optimization/valid/05_logic.src\n$ python3 src/main.py compile tests/optimization/valid/05_logic.src\n$ cp tests/optimization/valid/05_logic.asm tests/optimization/valid/05_logic_no_opt.asm\n$ nasm -f elf64 tests/optimization/valid/05_logic.asm -o 05_logic.o\n$ gcc -no-pie 05_logic.o -o 05_logic\n$ ./05_logic\nRETURN CODE: 0\nTEST: tests/optimization/valid/05_logic.src\nMODE: OPTIMIZED\n$ python3 src/main.py check tests/optimization/valid/05_logic.src\n$ python3 src/main.py compile tests/optimization/valid/05_logic.src --optimize --verbose\n$ cp tests/optimization/valid/05_logic.asm tests/optimization/valid/05_logic_opt.asm\n$ diff -u tests/optimization/valid/05_logic_no_opt.asm tests/optimization/valid/05_logic_opt.asm\n$ nasm -f elf64 tests/optimization/valid/05_logic.asm -o 05_logic_opt.o\n$ gcc -no-pie 05_logic_opt.o -o 05_logic_opt\n$ ./05_logic_opt\nRETURN CODE: 0\n\nCOMPARE: tests/optimization/valid/05_logic.src\nWITHOUT OPTIMIZE: 0\nWITH OPTIMIZE:    0\nRESULT: OK\nTEST: tests/optimization/valid/06_mixed.src\nMODE: NORMAL\n$ python3 src/main.py check tests/optimization/valid/06_mixed.src\n$ python3 src/main.py compile tests/optimization/valid/06_mixed.src\n$ cp tests/optimization/valid/06_mixed.asm tests/optimization/valid/06_mixed_no_opt.asm\n$ nasm -f elf64 tests/optimization/valid/06_mixed.asm -o 06_mixed.o\n$ gcc -no-pie 06_mixed.o -o 06_mixed\n$ ./06_mixed\nRETURN CODE: 10\nTEST: tests/optimization/valid/06_mixed.src\nMODE: OPTIMIZED\n$ python3 src/main.py check tests/optimization/valid/06_mixed.src\n$ python3 src/main.py compile tests/optimization/valid/06_mixed.src --optimize --verbose\n$ cp tests/optimization/valid/06_mixed.asm tests/optimization/valid/06_mixed_opt.asm\n$ diff -u tests/optimization/valid/06_mixed_no_opt.asm tests/optimization/valid/06_mixed_opt.asm\n$ nasm -f elf64 tests/optimization/valid/06_mixed.asm -o 06_mixed_opt.o\n$ gcc -no-pie 06_mixed_opt.o -o 06_mixed_opt\n$ ./06_mixed_opt\nRETURN CODE: 10\n\nCOMPARE: tests/optimization/valid/06_mixed.src\nWITHOUT OPTIMIZE: 10\nWITH OPTIMIZE:    10\nRESULT: OK\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 7 invalid: array out of bounds",
+      "command": [
+        "/usr/bin/python3",
+        "src/main.py",
+        "check",
+        "tests/array/invalid/01_out_of_bounds.src"
+      ],
+      "returncode": 1,
+      "status": "PASS",
+      "stdout_tail": "Анализ файла (семантический): tests/array/invalid/01_out_of_bounds.src\n\nОшибки семантического анализа:\nsemantic error: array index 5 out of bounds for array 'arr' of size 5\n  --> <input>:1:36\n   |\n  1 | fn main() -> int { int arr[5]; arr[5] = 10; return 0; }\n   |                                    ^\n\n\nНайдено ошибок: 1\n",
+      "stderr_tail": "",
+      "note": "expected failure test"
+    },
+    {
+      "name": "Sprint 7 invalid: wrong extern args",
+      "command": [
+        "/usr/bin/python3",
+        "src/main.py",
+        "check",
+        "tests/external/invalid/01_wrong_args.src"
+      ],
+      "returncode": 1,
+      "status": "PASS",
+      "stdout_tail": "Анализ файла (семантический): tests/external/invalid/01_wrong_args.src\n\nОшибки семантического анализа:\nsemantic error: function 'printf' expects at least 1 arguments, got 0\n  --> <input>:2:20\n   |\n  2 | fn main() -> int { printf(); return 0; }\n   |                    ^\n\n\nНайдено ошибок: 1\n",
+      "stderr_tail": "",
+      "note": "expected failure test"
+    },
+    {
+      "name": "Sprint 7: demo",
+      "command": [
+        "/usr/bin/python3",
+        "demo/run_demo.py"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "ссемблер сохранен в: demo/arrays_demo.asm\nАнализ файла (семантический): demo/external_demo.src\n\nСемантических ошибок не найдено!\n Ассемблер сохранен в: demo/external_demo.asm\nSprint 7 external demo\nАнализ файла (семантический): demo/optimization_demo.src\n\nСемантических ошибок не найдено!\nКомпиляция файла: demo/optimization_demo.src\n\n Применение оптимизаций...\n\n Optimization Statistics:\n  constant_folding: 1\n  constant_propagation: 0\n  dead_code_removed: 1\n  iterations: 2\n\nСгенерированный IR:\n# Generated IR for MiniCompiler\nfunc main() -> int\n{\n  entry:\n    t2 = 5\n    t1 = t2\n    t4 = mul t1, 2\n    t3 = t4\n    t5 = cmp_gt t3, 10\n    jump_if t5, L1\n    jump L2\n\n  L1:\n    return 100\n\n  L2:\n    return t3\n}\n\n\n Ассемблер сохранен в: demo/optimization_demo.asm\n\n Статистика:\n  Функций: 1\n  Базовых блоков: 3\n  Инструкций IR: 9\n  Временных переменных: 5\n  Размер ассемблера: 559 символов\nFINAL DEMO RUNNER\nDEMO: arrays_demo\nSOURCE: demo/arrays_demo.src\n$ python3 src/main.py check demo/arrays_demo.src\n$ python3 src/main.py compile demo/arrays_demo.src\n$ nasm -f elf64 demo/arrays_demo.asm -o /mnt/c/Users/Пользователь/Desktop/compiler-project/arrays_demo.o\n$ gcc -no-pie /mnt/c/Users/Пользователь/Desktop/compiler-project/arrays_demo.o -o /mnt/c/Users/Пользователь/Desktop/compiler-project/arrays_demo\n$ /mnt/c/Users/Пользователь/Desktop/compiler-project/arrays_demo\nRETURN CODE: 10\nRESULT: OK\nDEMO: external_demo\nSOURCE: demo/external_demo.src\n$ python3 src/main.py check demo/external_demo.src\n$ python3 src/main.py compile demo/external_demo.src\n$ nasm -f elf64 demo/external_demo.asm -o /mnt/c/Users/Пользователь/Desktop/compiler-project/external_demo.o\n$ gcc -no-pie /mnt/c/Users/Пользователь/Desktop/compiler-project/external_demo.o -o /mnt/c/Users/Пользователь/Desktop/compiler-project/external_demo\n$ /mnt/c/Users/Пользователь/Desktop/compiler-project/external_demo\nRETURN CODE: 5\nRESULT: OK\nDEMO: optimization_demo\nSOURCE: demo/optimization_demo.src\n$ python3 src/main.py check demo/optimization_demo.src\n$ python3 src/main.py compile demo/optimization_demo.src --optimize --verbose\n$ nasm -f elf64 demo/optimization_demo.asm -o /mnt/c/Users/Пользователь/Desktop/compiler-project/optimization_demo.o\n$ gcc -no-pie /mnt/c/Users/Пользователь/Desktop/compiler-project/optimization_demo.o -o /mnt/c/Users/Пользователь/Desktop/compiler-project/optimization_demo\n$ /mnt/c/Users/Пользователь/Desktop/compiler-project/optimization_demo\nRETURN CODE: 10\nRESULT: OK\nDEMO SUMMARY\nPASSED: 3\nFAILED: 0\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 8: CLI --help",
+      "command": [
+        "/usr/bin/python3",
+        "mycc.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "usage: mycc [-h] [-o OUTPUT] [-S] [-c] [-E] [--ast] [--ir] [--optimize]\n            [-O [OPT_LEVEL]] [--target TARGET] [-v] [--version] [-l LIBS]\n            [-L LIB_DIRS] [-I INCLUDE_DIRS] [--color {auto,always,never}]\n            [files ...]\n\nMiniCompiler command line interface\n\npositional arguments:\n  files                 source .src files\n\noptions:\n  -h, --help            show this help message and exit\n  -o, --output OUTPUT   output file\n  -S                    generate assembly only\n  -c                    compile to object file only\n  -E                    preprocess only\n  --ast                 print AST\n  --ir                  print IR\n  --optimize            enable optimizations\n  -O [OPT_LEVEL]        optimization level 0-3\n  --target TARGET       target architecture\n  -v, --verbose         verbose output\n  --version             show version\n  -l LIBS               link with library\n  -L LIB_DIRS           add library directory\n  -I INCLUDE_DIRS       add include directory (reserved)\n  --color {auto,always,never}\n                        color mode\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 8: CLI --version",
+      "command": [
+        "/usr/bin/python3",
+        "mycc.py",
+        "--version"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": "MiniCompiler mycc 1.0.0\nTarget: x86_64-linux-gnu\n",
+      "stderr_tail": "",
+      "note": ""
+    },
+    {
+      "name": "Sprint 8: CLI assembly only",
+      "command": [
+        "/usr/bin/python3",
+        "mycc.py",
+        "-S",
+        "demo/optimization_demo.src",
+        "-o",
+        "tests/final_reports/optimization_demo.asm"
+      ],
+      "returncode": 0,
+      "status": "PASS",
+      "stdout_tail": " Ассемблер сохранен в: tests/final_reports/optimization_demo.asm\n",
+      "stderr_tail": "",
+      "note": ""
+    }
+  ]
+}

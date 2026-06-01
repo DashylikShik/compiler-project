@@ -2,9 +2,9 @@ fn main() -> int {
     int a = 2 + 3;
     int b = a * 2;
 
-    if (1 > 2) {
+    if (b > 10) {
         return 100;
+    } else {
+        return b;
     }
-
-    return b;
 }

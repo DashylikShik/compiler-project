@@ -6,7 +6,9 @@ main:
     push rbp
     mov rbp, rsp
     sub rsp, 48
-    mov [rbp-8], 5
+    mov eax, 2
+    add eax, 3
+    mov [rbp-8], eax
     mov eax, [rbp-8]
     mov [rbp-16], eax
     mov eax, [rbp-16]
@@ -32,6 +34,12 @@ L1:
 
 L2:
     mov eax, dword [rbp-32]
+    mov rsp, rbp
+    pop rbp
+    ret
+
+L3:
+    mov eax, 0
     mov rsp, rbp
     pop rbp
     ret

@@ -294,6 +294,7 @@ python3 src/main.py ir --format html test.src --output test.html
 python3 -c "open('fact.src','w').write('fn fact(int n)->int{if(n<=1){return 1;}else{return n*fact(n-1);}}')"
 python3 src/main.py ir fact.src
 
+
 # 4. Показать статистику
 python3 src/main.py ir --verbose tests/ir/generation/expressions/arithmetic.src
 

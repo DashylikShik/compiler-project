@@ -15,6 +15,7 @@ class TokenType(Enum):
     KW_VOID = "void"
     KW_STRUCT = "struct"
     KW_FN = "fn"
+    KW_EXTERN = "extern"  # ← ДОБАВЛЕНО для Sprint 7
     
     # Идентификаторы (имена переменных и функций)
     IDENTIFIER = "IDENTIFIER"
@@ -32,7 +33,10 @@ class TokenType(Enum):
     OP_ASSIGN = "="
     OP_NOT = "!"   
     OP_AND = "&"             
-    OP_OR = "|"               
+    OP_OR = "|"   
+    
+    # Стрелка (для возвращаемого типа функции)
+    OP_ARROW = "->"  
     
     # Операторы сравнения (два символа)
     OP_EQ = "=="
@@ -61,7 +65,9 @@ class TokenType(Enum):
     RBRACKET = "]"  
     SEMICOLON = ";"
     COMMA = ","
-    COLON = ":"            
+    COLON = ":"  
+    DOT = "." 
+    ELLIPSIS = "..."  
     
     # Специальные
     END_OF_FILE = "EOF"

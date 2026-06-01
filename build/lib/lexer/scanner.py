@@ -32,6 +32,7 @@ class Scanner:
             'struct': TokenType.KW_STRUCT,
             'fn': TokenType.KW_FN,
             'bool': TokenType.KW_BOOL,
+            'extern': TokenType.KW_EXTERN,  # ← ДОБАВЛЕНО для Sprint 7
         }
         
         # Операторы (один символ)
@@ -56,6 +57,7 @@ class Scanner:
             ';': TokenType.SEMICOLON,
             ',': TokenType.COMMA,
             ':': TokenType.COLON,
+            '.': TokenType.DOT,  # ← ДОБАВЛЕНО для Sprint 7
         }
         
         # Двухсимвольные операторы
@@ -70,6 +72,8 @@ class Scanner:
             '-=': TokenType.OP_MINUS_ASSIGN,
             '*=': TokenType.OP_MULT_ASSIGN,
             '/=': TokenType.OP_DIV_ASSIGN,
+            "->": TokenType.OP_ARROW,
+            '...': TokenType.ELLIPSIS,  # ← ДОБАВЛЕНО для Sprint 7 (вариадические функции)
         }
         
         self.scan_tokens()
@@ -93,25 +97,50 @@ class Scanner:
     def scan_token(self):
         """Сканирует один токен"""
         char = self.advance()
-        
-        if char == ' ' or char == '\r' or char == '\t':
-            pass  # пропускаем пробелы
+
+        if char in (' ', '\r', '\t'):
+            return
+
         elif char == '\n':
             self.line += 1
             self.column = 1
+            return
+
         elif char == '"':
             self.scan_string()
+            return
+
         elif char.isdigit():
             self.scan_number()
+            return
+
         elif char.isalpha() or char == '_':
             self.scan_identifier()
+            return
+
         elif char == '/':
             if self.peek() == '/' or self.peek() == '*':
                 self.scan_comment()
             else:
                 self.scan_operator()
+            return
+
+        elif char == '.':
+            if self.peek() == '.' and self.peek_next() == '.':
+                self.advance()
+                self.advance()
+                self.add_token(TokenType.ELLIPSIS)
+            elif self.peek().isdigit():
+                while self.peek().isdigit() or self.peek() == '.':
+                    self.advance()
+                self.add_error(f"Неправильный формат числа: {self.source[self.start:self.current]}")
+            else:
+                self.add_token(TokenType.DOT)
+            return
+
         else:
             self.scan_operator()
+            return
     
     #МЕТОДЫ ДЛЯ РАСПОЗНАВАНИЯ
     
@@ -130,27 +159,55 @@ class Scanner:
         self.add_token(token_type)
     
     def scan_number(self):
-        """Сканирует число (целое или с плавающей точкой)"""
+        """Сканирует число и ловит неправильные форматы"""
+
         # Целая часть
         while self.peek().isdigit():
             self.advance()
-        
-        # Дробная часть
-        if self.peek() == '.' and self.peek_next().isdigit():
-            self.advance()  # точка
+
+        has_dot = False
+
+        # Если после цифр есть точка
+        if self.peek() == '.':
+            has_dot = True
+            self.advance()
+
+            # 123. — ошибка
+            if not self.peek().isdigit():
+                while self.peek().isalnum() or self.peek() == '.':
+                    self.advance()
+                self.add_error(f"Неправильный формат числа: {self.source[self.start:self.current]}")
+                return
+
+            # дробная часть
             while self.peek().isdigit():
                 self.advance()
-            
+
+            # 12.34.56 — ошибка
+            if self.peek() == '.':
+                while self.peek().isalnum() or self.peek() == '.':
+                    self.advance()
+                self.add_error(f"Неправильный формат числа: {self.source[self.start:self.current]}")
+                return
+
             value = float(self.source[self.start:self.current])
             self.add_token(TokenType.FLOAT_LITERAL, value)
-        else:
-            value = int(self.source[self.start:self.current])
-            
-            # Проверка диапазона
-            if value < -2**31 or value > 2**31 - 1:
-                self.add_error(f"Число {value} вне допустимого диапазона [-2³¹, 2³¹-1]")
-            
-            self.add_token(TokenType.INT_LITERAL, value)
+            return
+        
+
+        # Если после числа сразу буква — 123abc тоже ошибка
+        if self.peek().isalpha() or self.peek() == '_':
+            while self.peek().isalnum() or self.peek() == '_':
+                self.advance()
+            self.add_error(f"Неправильный формат числа: {self.source[self.start:self.current]}")
+            return
+
+        value = int(self.source[self.start:self.current])
+
+        if value < -2**31 or value > 2**31 - 1:
+            self.add_error(f"Число {value} вне допустимого диапазона [-2³¹, 2³¹-1]")
+
+        self.add_token(TokenType.INT_LITERAL, value)
     
     def scan_string(self):
         """Сканирует строковый литерал"""
@@ -219,6 +276,16 @@ class Scanner:
         # Возвращаемся к началу оператора
         self.current = self.start
         self.column = self.start_column
+        
+        # Проверяем трехсимвольные операторы (троеточие)
+        if not self.is_at_end() and self.current + 2 < len(self.source):
+            three_char = self.source[self.current:self.current + 3]
+            if three_char in self.two_char_operators:
+                self.advance()
+                self.advance()
+                self.advance()
+                self.add_token(self.two_char_operators[three_char])
+                return
         
         # Проверяем двухсимвольные операторы
         if not self.is_at_end() and self.current + 1 < len(self.source):
