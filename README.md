@@ -3,103 +3,112 @@
 Учебный проект по созданию компилятора
 
 ## Структура проекта
+
+```text
 compiler-project/
-├── src/                              # Исходный код
-│   ├── lexer/                        # Sprint 1: Лексический анализатор
-│   │   ├── scanner.py                # Сканер токенов
-│   │   ├── token.py                  # Определения типов токенов
+├── src/                                  # Исходный код компилятора
+│   ├── lexer/                            # Sprint 1: лексический анализатор
+│   │   ├── scanner.py                    # Сканер токенов
+│   │   ├── token.py                      # Типы токенов
 │   │   └── __init__.py
 │   │
-│   ├── parser/                       # Sprint 2: Синтаксический анализатор
-│   │   ├── parser.py                 # Рекурсивный нисходящий парсер
-│   │   ├── ast.py                    # Классы узлов AST
-│   │   ├── grammar.txt               # Формальная грамматика EBNF
+│   ├── parser/                           # Sprint 2: синтаксический анализатор
+│   │   ├── parser.py                     # Рекурсивный нисходящий парсер
+│   │   ├── ast.py                        # Узлы AST
+│   │   ├── grammar.txt                   # Грамматика языка
 │   │   └── __init__.py
 │   │
-│   ├── semantic/                     # Sprint 3: Семантический анализатор
-│   │   ├── analyzer.py               # Семантический анализ AST
-│   │   ├── symbol_table.py           # Иерархическая таблица символов
-│   │   ├── type_system.py            # Система типов и проверка совместимости
-│   │   ├── errors.py                 # Классы семантических ошибок
+│   ├── semantic/                         # Sprint 3: семантический анализ
+│   │   ├── analyzer.py                   # Проверка типов, функций, массивов
+│   │   ├── symbol_table.py               # Таблица символов и области видимости
+│   │   ├── type_system.py                # Система типов
+│   │   ├── errors.py                     # Формат семантических ошибок
 │   │   └── __init__.py
 │   │
-│   ├── ir/                           # Sprint 4: Промежуточное представление
-│   │   ├── ir_instructions.py        # Определения инструкций IR
-│   │   ├── ir_generator.py           # Генератор IR из AST
-│   │   ├── ir_printer.py             # Вывод в форматах (text/dot/json/html)
-│   │   ├── basic_block.py            # Базовые блоки и CFG
+│   ├── ir/                               # Sprint 4 и Sprint 7: IR и оптимизации
+│   │   ├── ir_instructions.py            # Инструкции промежуточного представления
+│   │   ├── ir_generator.py               # Генерация IR из AST
+│   │   ├── ir_printer.py                 # Вывод IR
+│   │   ├── basic_block.py                # Базовые блоки и CFG
+│   │   ├── optimizer/                    # Оптимизации IR
+│   │   │   ├── constant_folding.py       # Constant folding
+│   │   │   ├── constant_propagation.py   # Constant propagation
+│   │   │   ├── dead_code.py              # Dead code elimination
+│   │   │   └── __init__.py
 │   │   └── __init__.py
 │   │
-│   ├── utils/                        # Вспомогательные утилиты
-│   │   ├── ast_printer.py            # Pretty-print AST
-│   │   ├── ast_dot.py                # Генерация DOT для Graphviz
+│   ├── codegen/                          # Sprint 5-7: генерация x86-64 NASM
+│   │   ├── x86_generator.py              # Основной генератор ассемблера
+│   │   ├── array/                        # Генерация кода для массивов
+│   │   ├── external/                     # Внешние C-вызовы: printf, malloc, free
 │   │   └── __init__.py
 │   │
-│   └── main.py                       # Точка входа (все спринты)
+│   ├── runtime/                          # Runtime-вспомогательные файлы
+│   ├── libc/                             # Поддержка внешних библиотечных функций
+│   │
+│   ├── utils/                            # Утилиты
+│   │   ├── ast_printer.py                # Pretty-print AST
+│   │   ├── ast_dot.py                    # DOT для Graphviz
+│   │   └── __init__.py
+│   │
+│   └── main.py                           # Основная точка входа старого CLI
 │
-├── tests/                            # Тесты
-│   ├── lexer/                        # Sprint 1: Тесты лексера
-│   │   ├── valid/                    # 20 валидных тестов
-│   │   ├── invalid/                  # 10 невалидных тестов
-│   │   ├── expected/                 # Эталонные токены
-│   │   └── output/                   # Результаты тестов
+├── tests/                                # Тесты всех спринтов
+│   ├── lexer/                            # Sprint 1: golden-тесты лексера
+│   │   ├── valid/
+│   │   ├── invalid/
+│   │   ├── expected/
+│   │   └── output/
 │   │
-│   ├── parser/                       # Sprint 2: Тесты парсера
-│   │   ├── valid/                    # Валидные тесты
-│   │   │   ├── expressions/          # Выражения
-│   │   │   ├── statements/           # Операторы
-│   │   │   ├── declarations/         # Объявления
-│   │   │   └── full_programs/        # Полные программы
-│   │   ├── invalid/                  # Невалидные тесты
-│   │   │   └── syntax_errors/        # Синтаксические ошибки
-│   │   ├── expected/                 # Эталонные файлы
-│   │   │   ├── valid_*               # AST для валидных тестов
-│   │   │   └── invalid_*             # Ожидаемые ошибки
-│   │   └── output/                   # Результаты тестов
+│   ├── parser/                           # Sprint 2: pytest-тесты парсера
+│   │   ├── valid/
+│   │   ├── invalid/
+│   │   ├── expected/
+│   │   └── output/
 │   │
-│   ├── semantic/                     # Sprint 3: Тесты семантики
-│   │   ├── valid/                    # Валидные семантические тесты
-│   │   ├── invalid/                  # Невалидные тесты (ошибки)
-│   │   ├── expected/                 # Эталонные результаты
-│   │   └── output/                   # Результаты тестов
+│   ├── semantic/                         # Sprint 3: семантические примеры
+│   ├── ir/                               # Sprint 4: IR unit/golden tests
+│   ├── codegen/                          # Sprint 5: x86 codegen tests
+│   ├── control_flow/                     # Sprint 6: if/while/for/short-circuit tests
+│   ├── optimization/                     # Sprint 7: optimization tests
+│   ├── array/                            # Sprint 7: массивы
+│   ├── external/                         # Sprint 7: внешние C-функции
+│   ├── final_reports/                    # Sprint 8: JSON-отчёты общего запуска
 │   │
-│   ├── ir/                           # Sprint 4: Тесты IR
-│   │   ├── generation/               # Тесты генерации IR
-│   │   │   ├── expressions/          # Арифметические выражения
-│   │   │   │   ├── arithmetic.src
-│   │   │   │   └── expected/
-│   │   │   ├── control_flow/         # Управление потоком (if/while)
-│   │   │   │   ├── if_statement.src
-│   │   │   │   ├── while_loop.src
-│   │   │   │   └── expected/
-│   │   │   └── functions/            # Функции и вызовы
-│   │   │       ├── call.src
-│   │   │       ├── multiple.src
-│   │   │       └── expected/
-│   │   ├── validation/               # Валидационные проверки
-│   │   ├── test_runner.py            # Основные тесты IR (14 тестов)
-│   │   ├── test_golden.py            # Golden тесты (7 тестов)
-│   │   └── __init__.py
-│   │
-│   ├── test_runner.py                # Раннер тестов лексера
-│   ├── test_parser.py                # Раннер тестов парсера
-│   ├── test_semantic.py              # Юнит-тесты семантики
+│   ├── test_runner.py                    # Раннер лексера
+│   ├── test_semantic.py                  # Unit-тесты семантики
+│   ├── all_tests.py                      # Sprint 8: единый запуск всех тестов
 │   └── __init__.py
 │
-├── examples/                         # Примеры программ
+├── demo/                                 # Финальные демонстрации
+│   ├── arrays_demo.src                   # Массивы
+│   ├── external_demo.src                 # printf, malloc, free, strlen
+│   ├── optimization_demo.src             # Оптимизации
+│   ├── factorial.src                     # Рекурсия
+│   ├── quicksort.src                     # Алгоритмический пример
+│   └── run_demo.py                       # Единый запуск demo
+│
+├── examples/                             # Небольшие примеры программ
 │   ├── test1.src
 │   ├── test2.src
 │   ├── test3.src
-│   └── factorial.src                 # Пример с рекурсией
+│   └── factorial.src
 │
-├── docs/                             # Документация
-│   ├── language_spec.md              # Спецификация языка
-│   └── ir_spec.md                    # Спецификация IR
+├── docs/                                 # Документация Sprint 8
+│   ├── language_spec.md                  # Спецификация языка
+│   ├── developer_guide.md                # Руководство разработчика
+│   ├── user_guide.md                     # Руководство пользователя
+│   ├── testing.md                        # Тестирование
+│   └── sprint8_report.md                 # Отчёт по финальному спринту
 │
-├── .gitignore                        # Исключения Git
-├── README.md                         # Документация проекта
-├── setup.py                          # Установка пакета
-
+├── mycc.py                               # Новый CLI Sprint 8
+├── mycc                                  # Unix-wrapper для mycc.py
+├── run_valid_tests.py                    # Интеграционные тесты Sprint 7
+├── Makefile                              # make test-all, make demo, make clean
+├── setup.py                              # Сборка Python-пакета
+├── README.md                             # Главная документация
+├── .gitignore
+└── __init__.py
 
 ## Установка и запуск
 
@@ -497,3 +506,19 @@ chmod +x run_valid_tests.py
 
 python3 src/main.py check tests/array/invalid/01_out_of_bounds.src
 python3 src/main.py check tests/external/invalid/01_wrong_args.src
+
+
+## Make-команды
+### Показать список команд
+
+```bash
+make help
+make test-all
+
+## CLI
+python3 mycc.py --help
+python3 mycc.py --version
+python3 mycc.py -S demo/optimization_demo.src -o tests/final_reports/check.asm
+python3 mycc.py demo/arrays_demo.src -o arrays_demo_check
+./arrays_demo_check
+echo $?
